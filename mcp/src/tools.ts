@@ -20,12 +20,12 @@ export function registerTools(server: McpServer): void {
       description:
         'Deploy a static website to PreviewShip preview environment and get a shareable preview URL. ' +
         'Works with HTML/CSS/JS websites, React/Vue/Angular build outputs (dist/build directories), ' +
-        'static site generator outputs, and more. The preview link is publicly accessible.',
+        'single AI-generated .html files, static site generator outputs, and more. The preview link is publicly accessible.',
       inputSchema: z.object({
         path: z
           .string()
           .optional()
-          .describe('Directory path to deploy. Defaults to current working directory. Recommend deploying build output directories (e.g. ./dist or ./build).'),
+          .describe('Directory path or single .html file to deploy. Defaults to current working directory. Recommend deploying build output directories (e.g. ./dist or ./build) or generated HTML files (e.g. ./report.html).'),
         projectName: z
           .string()
           .optional()

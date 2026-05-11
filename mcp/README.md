@@ -68,16 +68,20 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ### `deploy_preview`
 
-Deploy a static website to a preview environment.
+Deploy a static website or single HTML file to a preview environment.
 
 **Parameters:**
-- `path` (optional) — Directory to deploy. Defaults to current working directory.
+- `path` (optional) — Directory or single `.html` file to deploy. Defaults to current working directory.
 - `projectName` (optional) — Project name. Defaults to directory name.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
+
+**Important:** when `path` is a directory, it should be a static build artifact such as `dist`, `build`, `out`, or another folder containing `index.html` and browser assets. Ask the agent to run the framework build first. Do not deploy a raw source-code zip/folder with `package.json`, `src/`, and `node_modules` unless it is already static output.
 
 **Example usage in conversation:**
 > "Deploy this project to a preview"
 > "Deploy the dist folder"
+> "Deploy report.html and share the preview link"
+> "Build the app, then deploy the generated dist folder"
 > "Help me deploy and share a preview link"
 
 ### `check_deployment`

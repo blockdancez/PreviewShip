@@ -1,6 +1,6 @@
 {
   "name": "previewship-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP Server for PreviewShip — deploy previews from AI coding agents (Claude Code, Cursor, Windsurf).",
   "keywords": [
     "mcp",
