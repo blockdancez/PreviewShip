@@ -28,8 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(statusBar);
 
   // API Key 存取
-  const getApiKey = () => context.secrets.get('previewship.apiKey');
-  const setApiKey = (key: string) => context.secrets.store('previewship.apiKey', key);
+  const getApiKey = () => Promise.resolve(context.secrets.get('previewship.apiKey'));
+  const setApiKey = (key: string) => Promise.resolve(context.secrets.store('previewship.apiKey', key));
 
   // 首次安装欢迎引导
   const isFirstTime = !context.globalState.get<boolean>('previewship.welcomed');
@@ -59,6 +59,20 @@ export function activate(context: vscode.ExtensionContext) {
 
   const apiClient = new ApiClient(getServerUrl, getApiKey);
 
+  const ensureApiKey = async (): Promise<boolean> => {
+    const key = await getApiKey();
+    if (key) return true;
+
+    const action = await vscode.window.showWarningMessage(
+      'Please set your API Key first',
+      'Set API Key',
+    );
+    if (action === 'Set API Key') {
+      vscode.commands.executeCommand('previewship.setApiKey');
+    }
+    return false;
+  };
+
   // Command 1: Set API Key
   context.subscriptions.push(
     vscode.commands.registerCommand('previewship.setApiKey', async () => {
@@ -83,35 +97,23 @@ export function activate(context: vscode.ExtensionContext) {
   // Command 2: Deploy current workspace
   context.subscriptions.push(
     vscode.commands.registerCommand('previewship.deploy', async () => {
-      const key = await getApiKey();
-      if (!key) {
-        const action = await vscode.window.showWarningMessage(
-          'Please set your API Key first',
-          'Set API Key',
-        );
-        if (action === 'Set API Key') {
-          vscode.commands.executeCommand('previewship.setApiKey');
-        }
-        return;
-      }
+      if (!await ensureApiKey()) return;
       await executeDeploy(apiClient, statusBar);
     }),
   );
 
-  // Command 3: Show usage
+  // Command 3: Deploy active HTML file
+  context.subscriptions.push(
+    vscode.commands.registerCommand('previewship.deployActiveHtml', async () => {
+      if (!await ensureApiKey()) return;
+      await executeDeploy(apiClient, statusBar, { activeHtmlOnly: true });
+    }),
+  );
+
+  // Command 4: Show usage
   context.subscriptions.push(
     vscode.commands.registerCommand('previewship.showUsage', async () => {
-      const key = await getApiKey();
-      if (!key) {
-        const action = await vscode.window.showWarningMessage(
-          'Please set your API Key first',
-          'Set API Key',
-        );
-        if (action === 'Set API Key') {
-          vscode.commands.executeCommand('previewship.setApiKey');
-        }
-        return;
-      }
+      if (!await ensureApiKey()) return;
       try {
         const serverUrl = getServerUrl();
         console.log(`[PreviewShip] Fetching usage: ${serverUrl}/v1/usage`);

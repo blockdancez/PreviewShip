@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `PreviewShip: Deploy Active HTML File` 命令 — 将当前打开的 `.html` 文件作为 `index.html` 打包并部署
+- `PreviewShip: Deploy Workspace or HTML File` 命令 — 在当前编辑器为 HTML 文件时，可选择部署单个 HTML 或整个工作区
+
 ## [0.1.0] - 2026-03-17
 
 ### Added

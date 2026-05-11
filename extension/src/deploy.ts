@@ -6,10 +6,53 @@ import { ApiClient } from './api-client';
 import { StatusBar } from './status-bar';
 import { ApiError } from './types';
 import { showApiError } from './errors';
-import { packWorkspace } from './zipper';
+import { packHtmlFile, packWorkspace } from './zipper';
 
 /** 常见构建产物目录，按优先级排列 */
 const BUILD_OUTPUT_DIRS = ['dist', 'build', 'out', '.output'];
+
+interface ExecuteDeployOptions {
+  activeHtmlOnly?: boolean;
+}
+
+type DeployKind = 'directory' | 'html';
+
+function isHtmlFile(filePath: string): boolean {
+  return /\.html?$/i.test(filePath);
+}
+
+function getActiveHtmlDocument(): vscode.TextDocument | null {
+  const activeDocument = vscode.window.activeTextEditor?.document;
+  if (!activeDocument || activeDocument.isUntitled || activeDocument.uri.scheme !== 'file') {
+    return null;
+  }
+
+  const activePath = activeDocument.uri.fsPath;
+  if (!isHtmlFile(activePath)) {
+    return null;
+  }
+
+  return activeDocument;
+}
+
+async function ensureHtmlDocumentSaved(document: vscode.TextDocument): Promise<boolean> {
+  if (!document.isDirty) return true;
+
+  const action = await vscode.window.showWarningMessage(
+    'The active HTML file has unsaved changes.',
+    'Save and Deploy',
+    'Deploy Saved Version',
+    'Cancel',
+  );
+  if (action === 'Cancel' || !action) return false;
+  if (action === 'Deploy Saved Version') return true;
+
+  const saved = await document.save();
+  if (!saved) {
+    vscode.window.showErrorMessage('Could not save the active HTML file before deployment.');
+  }
+  return saved;
+}
 
 /**
  * 检测工作区中是否存在构建产物目录
@@ -146,55 +189,95 @@ async function runBuild(workspacePath: string): Promise<boolean> {
 export async function executeDeploy(
   apiClient: ApiClient,
   statusBar: StatusBar,
+  options: ExecuteDeployOptions = {},
 ): Promise<void> {
-  // 1. 检查 workspace
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  if (!workspaceFolder) {
-    vscode.window.showErrorMessage('Please open a workspace first');
-    return;
-  }
+  const workspacePath = workspaceFolder?.uri.fsPath;
+  const activeHtmlDocument = getActiveHtmlDocument();
+  const activeHtmlPath = activeHtmlDocument?.uri.fsPath ?? null;
+  let deployKind: DeployKind = 'directory';
+  let deployPath = workspacePath ?? '';
 
-  const workspacePath = workspaceFolder.uri.fsPath;
-
-  // 2. 检测是否为未构建的前端项目
-  const { needsBuild } = detectUnbuiltProject(workspacePath);
-  if (needsBuild) {
-    const action = await vscode.window.showWarningMessage(
-      'Frontend project not built yet (no dist/build directory found)',
-      'Build Now',
-      'Deploy Anyway',
+  if (options.activeHtmlOnly) {
+    if (!activeHtmlPath) {
+      vscode.window.showErrorMessage('Open a saved HTML file before running this command.');
+      return;
+    }
+    deployKind = 'html';
+    deployPath = activeHtmlPath;
+  } else if (!workspacePath) {
+    if (!activeHtmlPath) {
+      vscode.window.showErrorMessage('Please open a workspace or a saved HTML file first.');
+      return;
+    }
+    deployKind = 'html';
+    deployPath = activeHtmlPath;
+  } else if (activeHtmlPath) {
+    const action = await vscode.window.showInformationMessage(
+      `Deploy active HTML file "${path.basename(activeHtmlPath)}" or the workspace?`,
+      'Deploy HTML File',
+      'Deploy Workspace',
       'Cancel',
     );
     if (action === 'Cancel' || !action) return;
-    if (action === 'Build Now') {
-      const ok = await runBuild(workspacePath);
-      if (!ok) return;
+    if (action === 'Deploy HTML File') {
+      deployKind = 'html';
+      deployPath = activeHtmlPath;
     }
   }
 
-  // 4. 检测部署目录：构建产物子目录 or 整个工作区
-  let deployPath = workspacePath;
-  const buildDirs = detectBuildDirs(workspacePath);
+  if (deployKind === 'html' && activeHtmlDocument) {
+    const saved = await ensureHtmlDocumentSaved(activeHtmlDocument);
+    if (!saved) return;
+  }
 
-  if (buildDirs.length > 0) {
-    // 有构建产物目录 → 优先使用（即使根目录也有 index.html）
-    if (buildDirs.length === 1) {
-      deployPath = path.join(workspacePath, buildDirs[0]);
-      console.log(`[PreviewShip] Auto-detected build output: ${buildDirs[0]}/`);
-    } else {
-      // 多个候选，让用户选
-      const picked = await vscode.window.showQuickPick(
-        buildDirs.map((d) => ({ label: `${d}/`, description: 'Build output directory' })),
-        { placeHolder: 'Multiple build directories detected. Select one to deploy.' },
+  if (deployKind === 'directory') {
+    if (!workspacePath) {
+      vscode.window.showErrorMessage('Please open a workspace first');
+      return;
+    }
+
+    // 2. 检测是否为未构建的前端项目
+    const { needsBuild } = detectUnbuiltProject(workspacePath);
+    if (needsBuild) {
+      const action = await vscode.window.showWarningMessage(
+        'Frontend project not built yet (no dist/build directory found)',
+        'Build Now',
+        'Deploy Anyway',
+        'Cancel',
       );
-      if (!picked) return;
-      deployPath = path.join(workspacePath, picked.label.replace('/', ''));
+      if (action === 'Cancel' || !action) return;
+      if (action === 'Build Now') {
+        const ok = await runBuild(workspacePath);
+        if (!ok) return;
+      }
     }
+
+    // 4. 检测部署目录：构建产物子目录 or 整个工作区
+    const buildDirs = detectBuildDirs(workspacePath);
+
+    if (buildDirs.length > 0) {
+      // 有构建产物目录 → 优先使用（即使根目录也有 index.html）
+      if (buildDirs.length === 1) {
+        deployPath = path.join(workspacePath, buildDirs[0]);
+        console.log(`[PreviewShip] Auto-detected build output: ${buildDirs[0]}/`);
+      } else {
+        // 多个候选，让用户选
+        const picked = await vscode.window.showQuickPick(
+          buildDirs.map((d) => ({ label: `${d}/`, description: 'Build output directory' })),
+          { placeHolder: 'Multiple build directories detected. Select one to deploy.' },
+        );
+        if (!picked) return;
+        deployPath = path.join(workspacePath, picked.label.replace('/', ''));
+      }
+    }
+    // 如果没有构建产物目录，直接部署整个工作区
   }
-  // 如果没有构建产物目录，直接部署整个工作区
 
   // 5. 提示输入项目名
-  const defaultName = path.basename(workspacePath);
+  const defaultName = deployKind === 'html'
+    ? path.basename(deployPath, path.extname(deployPath))
+    : path.basename(workspacePath ?? deployPath);
   const projectName = await vscode.window.showInputBox({
     prompt: 'Enter project name',
     value: defaultName,
@@ -208,7 +291,9 @@ export async function executeDeploy(
   });
   if (!projectName) return;
 
-  const deployDirName = deployPath === workspacePath ? 'root' : path.basename(deployPath) + '/';
+  const deployDirName = deployKind === 'html'
+    ? path.basename(deployPath)
+    : deployPath === workspacePath ? 'root' : path.basename(deployPath) + '/';
   console.log(`[PreviewShip] Deploy path: ${deployPath}`);
 
   // 6. 执行部署（带进度条）
@@ -226,7 +311,9 @@ export async function executeDeploy(
 
         const config = vscode.workspace.getConfiguration('previewship');
         const excludePatterns = config.get<string[]>('excludePatterns', []);
-        const zipBuffer = await packWorkspace(deployPath, excludePatterns);
+        const zipBuffer = deployKind === 'html'
+          ? await packHtmlFile(deployPath)
+          : await packWorkspace(deployPath, excludePatterns);
         const sizeMb = (zipBuffer.length / 1024 / 1024).toFixed(1);
 
         if (token.isCancellationRequested) return;
