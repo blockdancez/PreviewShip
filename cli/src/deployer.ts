@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { ApiClient } from './api-client.js';
 import { getApiKey, getServerUrl } from './config.js';
-import { packDirectory, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
+import { packDirectory, packHtmlFile, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
 import { ApiError } from './types.js';
 import type { DeployOptions, DeployResult, DeploymentDetail, UsageResponse } from './types.js';
 
@@ -23,23 +23,30 @@ function createClient(): ApiClient {
   return new ApiClient(getServerUrl(), apiKey);
 }
 
-/**
- * 部署目录（核心函数，供 CLI 和 MCP 调用）
- */
+/** 部署目录或单个 HTML 文件（核心函数，供 CLI 和 MCP 调用） */
 export async function deploy(options: DeployOptions = {}): Promise<DeployResult> {
   const client = createClient();
 
-  // 确定部署目录
+  // 确定部署输入
   const deployPath = path.resolve(options.path || '.');
-  if (!fs.existsSync(deployPath) || !fs.statSync(deployPath).isDirectory()) {
+  if (!fs.existsSync(deployPath)) {
     return {
       success: false,
-      error: { code: 'INVALID_PATH', message: `Directory not found: ${deployPath}` },
+      error: { code: 'INVALID_PATH', message: `Path not found: ${deployPath}` },
+    };
+  }
+
+  const stat = fs.statSync(deployPath);
+  const isHtmlFile = stat.isFile() && /\.html?$/i.test(deployPath);
+  if (!stat.isDirectory() && !isHtmlFile) {
+    return {
+      success: false,
+      error: { code: 'INVALID_PATH', message: `Deploy path must be a directory or a .html file: ${deployPath}` },
     };
   }
 
   // 确定项目名
-  const projectName = options.projectName || path.basename(deployPath);
+  const projectName = options.projectName || path.basename(deployPath, path.extname(deployPath));
   if (!/^[a-zA-Z0-9_-]+$/.test(projectName)) {
     return {
       success: false,
@@ -48,8 +55,9 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   }
 
   // 打包
-  const excludePatterns = [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])];
-  const { buffer: zipBuffer, fileCount } = await packDirectory(deployPath, excludePatterns);
+  const { buffer: zipBuffer, fileCount } = isHtmlFile
+    ? await packHtmlFile(deployPath)
+    : await packDirectory(deployPath, [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])]);
 
   if (zipBuffer.length === 0 || fileCount === 0) {
     return {

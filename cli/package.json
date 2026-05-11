@@ -1,6 +1,6 @@
 {
   "name": "previewship",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "One-click deploy previews, instant shareable links. CLI for PreviewShip.",
   "keywords": [
     "deploy",

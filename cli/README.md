@@ -2,7 +2,7 @@
 
 > One-click deploy previews, instant shareable links.
 
-Deploy static websites to a preview environment from the terminal. Get a shareable link instantly.
+Deploy static websites and single HTML files to a preview environment from the terminal. Get a shareable link instantly.
 
 Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI directly.
 
@@ -13,9 +13,12 @@ Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI
 # 2. Set your API Key
 npx previewship login
 
-# 3. Deploy
+# 3. Deploy a build folder or a single HTML file
 npx previewship deploy ./dist
+npx previewship deploy ./report.html
 ```
+
+Important: deploy static build output, not a raw source-code folder. For framework projects, run `npm run build` first and deploy `dist`, `build`, `out`, or the generated static folder that contains `index.html` and assets.
 
 ## Installation
 
@@ -40,15 +43,18 @@ previewship login --key ps_live_xxx  # Non-interactive (CI/Agent)
 
 ### `previewship deploy [path]`
 
-Deploy a directory to preview.
+Deploy a directory or single HTML file to preview.
 
 ```bash
 previewship deploy                   # Deploy current directory
 previewship deploy ./dist            # Deploy specific directory
+previewship deploy ./report.html     # Deploy a single HTML file as index.html
 previewship deploy -n my-project     # Set project name
 previewship deploy --json            # JSON output (for scripting/agents)
 previewship deploy --exclude "*.map" # Extra exclude patterns
 ```
+
+If you pass a directory, it should already be deployable static output. Do not point the CLI at an unbuilt React/Vue/Next source folder unless that folder itself contains the final `index.html` and browser assets.
 
 ### `previewship status <id>`
 
@@ -88,6 +94,7 @@ AI coding agents can use PreviewShip CLI to deploy previews:
 ```bash
 # Agents should use --json for structured output
 previewship deploy ./dist --json
+previewship deploy ./report.html --json
 ```
 
 ## Plans

@@ -1,5 +1,9 @@
 import archiver from 'archiver';
 import { PassThrough } from 'node:stream';
+import * as fs from 'node:fs';
+
+const BUILD_OUTPUT_CONFIG_PATH = '.vercel/output/config.json';
+const STATIC_INDEX_PATH = '.vercel/output/static/index.html';
 
 /** 默认排除模式（与 VS Code 插件保持一致） */
 export const DEFAULT_EXCLUDE_PATTERNS = [
@@ -52,6 +56,35 @@ export function packDirectory(dirPath: string, excludePatterns: string[]): Promi
       ignore: excludePatterns,
       dot: false,
     });
+    archive.finalize();
+  });
+}
+
+/**
+ * 将单个 HTML 文件打包为 Vercel Build Output API 静态站点。
+ * 这样 AI 生成的单文件 HTML 可以直接部署，无需用户手动创建目录。
+ */
+export function packHtmlFile(filePath: string): Promise<{ buffer: Buffer; fileCount: number }> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const passthrough = new PassThrough();
+    passthrough.on('data', (chunk: Buffer) => chunks.push(chunk));
+    passthrough.on('end', () => {
+      resolve({
+        buffer: Buffer.concat(chunks),
+        fileCount: 1,
+      });
+    });
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', reject);
+    archive.on('warning', (err) => {
+      if (err.code !== 'ENOENT') reject(err);
+    });
+
+    archive.pipe(passthrough);
+    archive.append(JSON.stringify({ version: 3 }), { name: BUILD_OUTPUT_CONFIG_PATH });
+    archive.append(fs.createReadStream(filePath), { name: STATIC_INDEX_PATH });
     archive.finalize();
   });
 }
