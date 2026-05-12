@@ -96,17 +96,17 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Command 2: Deploy current workspace
   context.subscriptions.push(
-    vscode.commands.registerCommand('previewship.deploy', async () => {
+    vscode.commands.registerCommand('previewship.deploy', async (uri?: vscode.Uri) => {
       if (!await ensureApiKey()) return;
-      await executeDeploy(apiClient, statusBar);
+      await executeDeploy(apiClient, statusBar, { targetUri: uri });
     }),
   );
 
   // Command 3: Deploy active HTML file
   context.subscriptions.push(
-    vscode.commands.registerCommand('previewship.deployActiveHtml', async () => {
+    vscode.commands.registerCommand('previewship.deployActiveHtml', async (uri?: vscode.Uri) => {
       if (!await ensureApiKey()) return;
-      await executeDeploy(apiClient, statusBar, { activeHtmlOnly: true });
+      await executeDeploy(apiClient, statusBar, { activeHtmlOnly: true, targetUri: uri });
     }),
   );
 

@@ -13,6 +13,7 @@ const BUILD_OUTPUT_DIRS = ['dist', 'build', 'out', '.output'];
 
 interface ExecuteDeployOptions {
   activeHtmlOnly?: boolean;
+  targetUri?: vscode.Uri;
 }
 
 type DeployKind = 'directory' | 'html';
@@ -33,6 +34,30 @@ function getActiveHtmlDocument(): vscode.TextDocument | null {
   }
 
   return activeDocument;
+}
+
+function getHtmlDocumentByPath(filePath: string): vscode.TextDocument | null {
+  const normalized = path.resolve(filePath);
+  return vscode.workspace.textDocuments.find((document) => (
+    document.uri.scheme === 'file'
+    && path.resolve(document.uri.fsPath) === normalized
+    && isHtmlFile(document.uri.fsPath)
+  )) ?? null;
+}
+
+function getHtmlPathFromUri(uri?: vscode.Uri): string | null {
+  if (!uri || uri.scheme !== 'file') return null;
+  return isHtmlFile(uri.fsPath) ? uri.fsPath : null;
+}
+
+function findRootHtmlFiles(workspacePath: string): string[] {
+  try {
+    return fs.readdirSync(workspacePath, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && isHtmlFile(entry.name))
+      .map((entry) => path.join(workspacePath, entry.name));
+  } catch {
+    return [];
+  }
 }
 
 async function ensureHtmlDocumentSaved(document: vscode.TextDocument): Promise<boolean> {
@@ -193,18 +218,26 @@ export async function executeDeploy(
 ): Promise<void> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   const workspacePath = workspaceFolder?.uri.fsPath;
-  const activeHtmlDocument = getActiveHtmlDocument();
-  const activeHtmlPath = activeHtmlDocument?.uri.fsPath ?? null;
+  const targetHtmlPath = getHtmlPathFromUri(options.targetUri);
+  const activeHtmlDocument = targetHtmlPath ? getHtmlDocumentByPath(targetHtmlPath) : getActiveHtmlDocument();
+  const activeHtmlPath = targetHtmlPath ?? activeHtmlDocument?.uri.fsPath ?? null;
   let deployKind: DeployKind = 'directory';
   let deployPath = workspacePath ?? '';
 
   if (options.activeHtmlOnly) {
     if (!activeHtmlPath) {
-      vscode.window.showErrorMessage('Open a saved HTML file before running this command.');
-      return;
+      const htmlFiles = workspacePath ? findRootHtmlFiles(workspacePath) : [];
+      if (htmlFiles.length === 1) {
+        deployKind = 'html';
+        deployPath = htmlFiles[0];
+      } else {
+        vscode.window.showErrorMessage('Open or select a saved HTML file before running this command.');
+        return;
+      }
+    } else {
+      deployKind = 'html';
+      deployPath = activeHtmlPath;
     }
-    deployKind = 'html';
-    deployPath = activeHtmlPath;
   } else if (!workspacePath) {
     if (!activeHtmlPath) {
       vscode.window.showErrorMessage('Please open a workspace or a saved HTML file first.');
@@ -223,6 +256,15 @@ export async function executeDeploy(
     if (action === 'Deploy HTML File') {
       deployKind = 'html';
       deployPath = activeHtmlPath;
+    }
+  } else {
+    const htmlFiles = findRootHtmlFiles(workspacePath);
+    const hasRootIndex = fs.existsSync(path.join(workspacePath, 'index.html'))
+      || fs.existsSync(path.join(workspacePath, 'index.htm'));
+    const buildDirs = detectBuildDirs(workspacePath);
+    if (!hasRootIndex && buildDirs.length === 0 && htmlFiles.length === 1) {
+      deployKind = 'html';
+      deployPath = htmlFiles[0];
     }
   }
 
