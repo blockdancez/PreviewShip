@@ -46,11 +46,17 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   }
 
   // 确定项目名
-  const projectName = options.projectName || path.basename(deployPath, path.extname(deployPath));
-  if (!/^[a-zA-Z0-9_-]+$/.test(projectName)) {
+  const projectName = (options.projectName || path.basename(deployPath, path.extname(deployPath))).trim();
+  if (!projectName) {
     return {
       success: false,
-      error: { code: 'INVALID_PROJECT_NAME', message: 'Project name can only contain letters, numbers, underscores and hyphens.' },
+      error: { code: 'INVALID_PROJECT_NAME', message: 'Project name cannot be empty.' },
+    };
+  }
+  if (projectName.length > 180) {
+    return {
+      success: false,
+      error: { code: 'INVALID_PROJECT_NAME', message: 'Project name is too long. Use a shorter name, for example: my-html-preview.' },
     };
   }
 
@@ -67,7 +73,7 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   }
 
   // 上传
-  const created = await client.createDeployment(projectName, zipBuffer);
+  const created = await client.createDeployment(projectName, zipBuffer, options.source || 'CLI');
 
   // 轮询
   const detail = await pollDeployment(client, created.deploymentId);

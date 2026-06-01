@@ -7,6 +7,7 @@
 export interface CreateDeploymentResponse {
   deploymentId: number;
   status: string;
+  deploymentSource?: string;
   createdAt: string;
 }
 
@@ -14,6 +15,7 @@ export interface CreateDeploymentResponse {
 export interface DeploymentDetail {
   deploymentId: number;
   projectName: string;
+  deploymentSource?: string;
   status: 'QUEUED' | 'BUILDING' | 'READY' | 'FAILED';
   previewUrl: string | null;
   errorMessage: string | null;

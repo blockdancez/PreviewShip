@@ -7,6 +7,7 @@
 export interface CreateDeploymentResponse {
   deploymentId: number;
   status: string;
+  deploymentSource?: string;
   createdAt: string;
 }
 
@@ -14,6 +15,7 @@ export interface CreateDeploymentResponse {
 export interface DeploymentDetail {
   deploymentId: number;
   projectName: string;
+  deploymentSource?: string;
   status: 'QUEUED' | 'BUILDING' | 'READY' | 'FAILED';
   previewUrl: string | null;
   errorMessage: string | null;
@@ -57,6 +59,8 @@ export interface DeployOptions {
   projectName?: string;
   /** 额外排除模式 */
   excludePatterns?: string[];
+  /** 部署入口（CLI/MCP 等），用于后台统计 */
+  source?: 'CLI' | 'MCP';
 }
 
 /** 部署结果 */

@@ -1,8 +1,8 @@
 # PreviewShip CLI
 
-> One-click deploy previews, instant shareable links.
+> Publish HTML online from the terminal. Upload HTML files, deploy static build output, and get instant shareable links.
 
-Deploy static websites and single HTML files to a preview environment from the terminal. Get a shareable link instantly.
+Deploy static websites and single HTML files to a preview environment from the terminal. Use PreviewShip CLI to upload an HTML file to a website, host an HTML file online, publish generated HTML, or share build output with a public URL instantly.
 
 Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI directly.
 
@@ -19,6 +19,14 @@ npx previewship deploy ./report.html
 ```
 
 Important: deploy static build output, not a raw source-code folder. For framework projects, run `npm run build` first and deploy `dist`, `build`, `out`, or the generated static folder that contains `index.html` and assets.
+
+## HTML Publishing Guides
+
+- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
+- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
+- [HTML deployer](https://previewship.com/guides/html-deployer)
 
 ## Installation
 
@@ -55,6 +63,8 @@ previewship deploy --exclude "*.map" # Extra exclude patterns
 ```
 
 If you pass a directory, it should already be deployable static output. Do not point the CLI at an unbuilt React/Vue/Next source folder unless that folder itself contains the final `index.html` and browser assets.
+
+Project names are display names inside PreviewShip. Use a short name you recognize; PreviewShip automatically creates a deployment-safe hosting name.
 
 ### `previewship status <id>`
 
@@ -101,7 +111,7 @@ previewship deploy ./report.html --json
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
-| Price | $0 | $9/mo | $84/yr |
+| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
 | Daily Deploys | 5 | 30 | 40 |
 | Monthly Deploys | 20 | 200 | 350 |
 | Upload Limit | 15MB | 50MB | 80MB |

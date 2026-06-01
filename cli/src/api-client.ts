@@ -18,11 +18,12 @@ export class ApiClient {
   ) {}
 
   /** POST /v1/deployments — 上传 zip 创建部署 */
-  async createDeployment(projectName: string, zipBuffer: Buffer): Promise<CreateDeploymentResponse> {
+  async createDeployment(projectName: string, zipBuffer: Buffer, source = 'CLI'): Promise<CreateDeploymentResponse> {
     const url = `${this.serverUrl}/v1/deployments`;
 
     const formData = new FormData();
     formData.set('projectName', projectName);
+    formData.set('source', source);
     formData.set('zip', new Blob([zipBuffer]), 'workspace.zip');
 
     const resp = await this.fetchWithTimeout(url, {

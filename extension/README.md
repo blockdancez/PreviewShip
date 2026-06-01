@@ -1,8 +1,8 @@
 # PreviewShip - Editor Extension
 
-> One-click deployment for previews, instant link sharing.
+> One-click HTML file hosting and static preview deployment from Cursor / VS Code.
 
-PreviewShip allows you to deploy static websites and single HTML files to a preview environment with one click within Cursor / VS Code, giving you a shareable preview link immediately.
+PreviewShip allows you to publish the active `.html` file, deploy static websites, host HTML files online, and share AI-generated HTML artifacts with one click inside Cursor / VS Code.
 
 Compatible with Cursor, VS Code, and all VS Code-based editors.
 
@@ -50,13 +50,21 @@ Search for `PreviewShip` in the editor extension panel to install.
 1. Open the project folder you want to deploy.
 2. Execute `PreviewShip: Deploy Workspace or HTML File` in the command palette.
 3. If the active editor is an `.html` file, choose whether to deploy that file or the workspace.
-4. Enter the project name (defaults to the folder name or HTML filename).
+4. Enter the project name (defaults to the folder name or HTML filename). PreviewShip automatically creates a deployment-safe hosting name.
 5. Wait for packaging, uploading, and building to complete.
 6. The preview link is automatically copied to the clipboard!
 
 To publish a single HTML file directly, open the file and run `PreviewShip: Deploy Active HTML File`.
 
 For framework projects, deploy the static build output rather than a raw source-code workspace. Run `npm run build` first and deploy `dist`, `build`, `out`, or another folder that contains `index.html` and assets. PreviewShip does not run `npm install` or build source zips after upload.
+
+## HTML Publishing Guides
+
+- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
+- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
+- [Claude HTML artifact to URL](https://previewship.com/guides/claude-html-artifact-to-url)
 
 ## Commands
 
@@ -118,7 +126,7 @@ PreviewShip is a **static file hosting** service and supports:
 
 | Item | Free | Pro Monthly | Pro Yearly |
 |------|------|---------|---------|
-| Price | $0 | $9/mo | $84/yr |
+| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
 | Daily Deploys | 5 | 30 | 40 |
 | Monthly Deploys | 20 | 200 | 350 |
 | Per-Upload Limit | 15MB | 50MB | 80MB |

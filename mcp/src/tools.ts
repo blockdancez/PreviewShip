@@ -29,7 +29,7 @@ export function registerTools(server: McpServer): void {
         projectName: z
           .string()
           .optional()
-          .describe('Project name. Only letters, numbers, underscores and hyphens. Defaults to directory name.'),
+          .describe('Project name shown in PreviewShip. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting name.'),
         excludePatterns: z
           .array(z.string())
           .optional()
@@ -42,7 +42,8 @@ export function registerTools(server: McpServer): void {
           path: path || undefined,
           projectName: projectName || undefined,
           excludePatterns: excludePatterns || undefined,
-        });
+          source: 'MCP',
+        } as Parameters<typeof deploy>[0] & { source: 'MCP' });
 
         if (result.success) {
           const sizeMb = ((result.zipSizeBytes || 0) / 1024 / 1024).toFixed(1);

@@ -2,7 +2,7 @@
   "name": "previewship",
   "displayName": "PreviewShip",
   "description": "One-click deploy previews, instant shareable links. Compatible with Cursor / VS Code.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "previewship-BD",
   "icon": "resources/icon.png",
   "license": "MIT",

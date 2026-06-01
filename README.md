@@ -1,8 +1,8 @@
 # PreviewShip
 
-> Deploy previews, share instantly. From your editor, terminal, AI agent, or browser — one step to a live link.
+> Publish HTML online, upload HTML files, deploy AI-generated pages, and share frontend previews from your editor, terminal, AI agent, or browser.
 
-PreviewShip is a frontend preview deployment and sharing platform for developers. Deploy your static site and get a shareable preview URL in seconds — no Git, no CI/CD, no complex configuration.
+PreviewShip is a frontend preview deployment and HTML publishing platform for developers and AI-assisted workflows. Upload an HTML file to a website, paste generated HTML, host a single HTML file online, or deploy a static build folder and get a shareable preview URL in seconds — no Git, no CI/CD, no complex configuration.
 
 ## Open Source Packages
 
@@ -12,16 +12,27 @@ PreviewShip provides three open-source client packages:
 |---------|-----|-------------|
 | [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy from the terminal with one command |
 | [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native tool integration for AI coding agents |
-| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy from your editor |
+| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy workspace or active HTML file from your editor |
 
 ## Deployment Methods
 
 | Method | Command / Action | Best For |
 |--------|-----------------|----------|
-| CLI | `npx previewship deploy ./dist` | Terminal, scripts, CI/CD |
+| CLI | `npx previewship deploy ./dist` or `npx previewship deploy ./report.html` | Terminal, scripts, CI/CD, generated HTML |
 | MCP Server | Say "deploy to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf |
-| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy` | Editor-first workflow |
-| Web Console | Drag & drop zip at [previewship.com](https://previewship.com) | Zero-tool deployment |
+| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace or HTML File` | Editor-first workflow, active HTML files |
+| Web Console | Upload zip/html or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
+
+## HTML Publishing Workflows
+
+- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
+- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
+- [HTML deployer](https://previewship.com/guides/html-deployer)
+- [Paste HTML and get a URL](https://previewship.com/guides/paste-html-get-url)
+- [Turn ChatGPT HTML into a website](https://previewship.com/guides/chatgpt-html-to-website)
+- [Publish a Claude HTML artifact](https://previewship.com/guides/claude-html-artifact-to-url)
 
 ---
 
@@ -37,14 +48,19 @@ npx previewship login --key ps_live_YOUR_KEY
 
 # Deploy a directory
 npx previewship deploy ./dist
+
+# Deploy a single HTML file
+npx previewship deploy ./report.html
 ```
+
+For zipped uploads or directory deploys, deploy the static build artifact, not the raw source project. Run your framework build first, then deploy folders such as `dist`, `build`, `out`, `public`, or a zip containing `index.html` and its assets. Do not upload a source-code zip with `package.json`, `src/`, and `node_modules` and expect PreviewShip to build it.
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
 | `previewship login [--key KEY]` | Set API Key for authentication |
-| `previewship deploy [path] [-n name] [--json]` | Deploy a directory and get a preview URL |
+| `previewship deploy [path] [-n name] [--json]` | Deploy a directory or single HTML file and get a preview URL |
 | `previewship status <id> [--json]` | Check deployment status by ID |
 | `previewship usage [--json]` | Show remaining deployment quota |
 | `previewship whoami` | Display current configuration |
@@ -61,6 +77,8 @@ npx previewship deploy ./dist --json
 # Custom exclude patterns
 npx previewship deploy ./dist --exclude "*.map" --exclude "tests/**"
 ```
+
+Project names are display names inside PreviewShip. They can use natural short names; PreviewShip automatically creates a deployment-safe hosting name for Vercel.
 
 ### Environment Variables
 
@@ -141,7 +159,7 @@ import { packDirectory, DEFAULT_EXCLUDE_PATTERNS } from 'previewship'
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `deploy_preview` | Deploy a directory and get a preview URL | `path` (optional), `projectName` (optional), `excludePatterns` (optional) |
+| `deploy_preview` | Deploy a build-output directory or single HTML file and get a preview URL | `path` (optional), `projectName` (optional), `excludePatterns` (optional) |
 | `check_deployment` | Check deployment status by ID | `deploymentId` (required) |
 | `show_usage` | Show remaining deployment quota | — |
 
@@ -157,7 +175,7 @@ Once configured, simply ask your AI agent:
 
 ## VS Code / Cursor Extension
 
-One-click deploy from VS Code or Cursor. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) or [Open VSX Registry](https://open-vsx.org/extension/previewship/previewship).
+One-click deploy from VS Code or Cursor. Deploy a workspace, detected build output, or the active `.html` file. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) or [Open VSX Registry](https://open-vsx.org/extension/previewship/previewship).
 
 ### Install
 
@@ -180,7 +198,8 @@ cursor --install-extension previewship-0.1.3.vsix
 | Command | Description |
 |---------|-------------|
 | `PreviewShip: Set API Key` | Store your API Key securely (encrypted via VS Code Secrets API) |
-| `PreviewShip: Deploy Current Workspace` | Package, upload, and deploy your project |
+| `PreviewShip: Deploy Workspace or HTML File` | Package, upload, and deploy your project; when an HTML file is active, choose file or workspace |
+| `PreviewShip: Deploy Active HTML File` | Package the active `.html` file as `index.html` and deploy it directly |
 | `PreviewShip: Show Usage` | Display daily/monthly deployment quota |
 
 ### Settings
@@ -205,7 +224,7 @@ cursor --install-extension previewship-0.1.3.vsix
 
 | | Free | Pro Monthly | Pro Yearly |
 |-|-----:|----------:|----------:|
-| **Price** | $0 | $9/mo | $84/yr ($7/mo) |
+| **Price** | $0 | $5.40/mo launch price (was $9/mo) | $50.40/yr launch price (was $84/yr, $4.20/mo) |
 | **Projects** | 1 | 10 | 20 |
 | **Daily Deploys** | 5 | 30 | 40 |
 | **Max Zip Size** | 15 MB | 50 MB | 80 MB |
@@ -215,7 +234,9 @@ Free plan requires no credit card. Start deploying instantly.
 
 ## Supported Frameworks
 
-Any static frontend output works — React, Vue, Svelte, Angular, Next.js (export), Nuxt (generate), Astro, vanilla HTML/CSS/JS, and more. Just make sure your build output contains an `index.html`.
+Any static frontend output works — React, Vue, Svelte, Angular, Next.js (export), Nuxt (generate), Astro, vanilla HTML/CSS/JS, and more. Build output directories should contain an `index.html`. Single `.html` files are automatically packaged as `index.html` when deployed from CLI, MCP, VS Code/Cursor extension, or the web console.
+
+Important: PreviewShip hosts static artifacts; it does not run `npm install` or build raw source zips after upload. If your project is React/Vue/Next/Astro/etc., run the build command first and upload the generated output folder or zip.
 
 ## Requirements
 

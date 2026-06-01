@@ -20,12 +20,13 @@ export class ApiClient {
   }
 
   /** POST /v1/deployments —— 上传 zip 创建部署 */
-  async createDeployment(projectName: string, zipBuffer: Buffer): Promise<CreateDeploymentResponse> {
+  async createDeployment(projectName: string, zipBuffer: Buffer, source = 'EXTENSION'): Promise<CreateDeploymentResponse> {
     const url = `${this.getServerUrl()}/v1/deployments`;
     const apiKey = await this.requireApiKey();
 
     const formData = new FormData();
     formData.set('projectName', projectName);
+    formData.set('source', source);
     formData.set('zip', new Blob([zipBuffer]), 'workspace.zip');
 
     // 上传超时设长一些（60 秒）

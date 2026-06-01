@@ -327,7 +327,7 @@ export async function executeDeploy(
     ignoreFocusOut: true,
     validateInput: (val) => {
       if (!val.trim()) return 'Project name cannot be empty';
-      if (!/^[a-zA-Z0-9_-]+$/.test(val.trim())) return 'Only letters, numbers, underscores and hyphens are allowed';
+      if (val.trim().length > 180) return 'Project name is too long. Use a shorter name, for example: my-html-preview.';
       return null;
     },
   });
