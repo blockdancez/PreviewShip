@@ -115,6 +115,8 @@ previewship deploy ./report.html --json
 | Daily Deploys | 5 | 30 | 40 |
 | Monthly Deploys | 20 | 200 | 350 |
 | Upload Limit | 15MB | 50MB | 80MB |
+| Preview Expiry | 3 days | 30 days | 365 days |
+| PreviewShip Watermark | Included | Removed | Removed |
 
 [View full plan comparison](https://previewship.com/billing)
 

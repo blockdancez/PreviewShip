@@ -130,7 +130,8 @@ PreviewShip is a **static file hosting** service and supports:
 | Daily Deploys | 5 | 30 | 40 |
 | Monthly Deploys | 20 | 200 | 350 |
 | Per-Upload Limit | 15MB | 50MB | 80MB |
-| Preview Expiry | 7 days | 30 days | 365 days |
+| Preview Expiry | 3 days | 30 days | 365 days |
+| PreviewShip Watermark | Included | Removed | Removed |
 
 [View full plan comparison](https://previewship.com/billing)
 

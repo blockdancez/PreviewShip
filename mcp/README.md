@@ -115,6 +115,8 @@ Show remaining deployment quota.
 | Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
 | Daily Deploys | 5 | 30 | 40 |
 | Monthly Deploys | 20 | 200 | 350 |
+| Preview Expiry | 3 days | 30 days | 365 days |
+| PreviewShip Watermark | Included | Removed | Removed |
 
 [View plans](https://previewship.com/billing)
 
