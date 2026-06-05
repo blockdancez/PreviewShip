@@ -266,7 +266,7 @@ ${c.bold('Usage:')}
 
 ${c.bold('Commands:')}
   login              Set your API Key
-  deploy [path]      Deploy a directory or single HTML file to preview
+  deploy [path]      Deploy a directory, single HTML file, or Markdown file to preview
   status <id>        Check deployment status
   usage              Show quota usage
   whoami             Show current configuration
@@ -291,6 +291,7 @@ ${c.bold('Get started:')}
   2. previewship login
   3. previewship deploy ./dist
      or previewship deploy ./report.html
+     or previewship deploy ./README.md
 
 ${c.bold('Documentation:')} ${c.cyan('https://previewship.com/docs')}
 `.trim();

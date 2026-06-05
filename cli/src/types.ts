@@ -53,9 +53,9 @@ export class ApiError extends Error {
 
 /** 部署选项 */
 export interface DeployOptions {
-  /** 要部署的目录路径或单个 HTML 文件路径（默认当前目录） */
+  /** 要部署的目录路径、单个 HTML 文件或 Markdown 文件路径（默认当前目录） */
   path?: string;
-  /** 项目名称（默认为目录名或 HTML 文件名） */
+  /** 项目名称（默认为目录名、HTML 文件名或 Markdown 文件名） */
   projectName?: string;
   /** 额外排除模式 */
   excludePatterns?: string[];

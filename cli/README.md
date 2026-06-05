@@ -1,8 +1,8 @@
 # PreviewShip CLI
 
-> Publish HTML online from the terminal. Upload HTML files, deploy static build output, and get instant shareable links.
+> Publish HTML and Markdown online from the terminal. Upload HTML/Markdown files, deploy static build output, and get instant shareable links.
 
-Deploy static websites and single HTML files to a preview environment from the terminal. Use PreviewShip CLI to upload an HTML file to a website, host an HTML file online, publish generated HTML, or share build output with a public URL instantly.
+Deploy static websites, single HTML files, and Markdown documents to a preview environment from the terminal. Use PreviewShip CLI to upload an HTML file to a website, publish Markdown as a readable page, host HTML online, publish generated HTML, or share build output with a public URL instantly.
 
 Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI directly.
 
@@ -13,9 +13,10 @@ Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI
 # 2. Set your API Key
 npx previewship login
 
-# 3. Deploy a build folder or a single HTML file
+# 3. Deploy a build folder, single HTML file, or Markdown document
 npx previewship deploy ./dist
 npx previewship deploy ./report.html
+npx previewship deploy ./README.md
 ```
 
 Important: deploy static build output, not a raw source-code folder. For framework projects, run `npm run build` first and deploy `dist`, `build`, `out`, or the generated static folder that contains `index.html` and assets.
@@ -51,12 +52,13 @@ previewship login --key ps_live_xxx  # Non-interactive (CI/Agent)
 
 ### `previewship deploy [path]`
 
-Deploy a directory or single HTML file to preview.
+Deploy a directory, single HTML file, or Markdown file to preview.
 
 ```bash
 previewship deploy                   # Deploy current directory
 previewship deploy ./dist            # Deploy specific directory
 previewship deploy ./report.html     # Deploy a single HTML file as index.html
+previewship deploy ./README.md       # Render Markdown and deploy it as index.html
 previewship deploy -n my-project     # Set project name
 previewship deploy --json            # JSON output (for scripting/agents)
 previewship deploy --exclude "*.map" # Extra exclude patterns
@@ -105,6 +107,7 @@ AI coding agents can use PreviewShip CLI to deploy previews:
 # Agents should use --json for structured output
 previewship deploy ./dist --json
 previewship deploy ./report.html --json
+previewship deploy ./README.md --json
 ```
 
 ## Plans

@@ -2,8 +2,8 @@
   "name": "previewship",
   "displayName": "PreviewShip",
   "description": "One-click deploy previews, instant shareable links. Compatible with Cursor / VS Code.",
-  "version": "0.1.8",
-  "publisher": "previewship-BD",
+  "version": "0.1.9",
+  "publisher": "previewship",
   "icon": "resources/icon.png",
   "license": "MIT",
   "homepage": "https://previewship.com",
@@ -35,11 +35,11 @@
       },
       {
         "command": "previewship.deploy",
-        "title": "PreviewShip: Deploy Workspace or HTML File"
+        "title": "PreviewShip: Deploy Workspace, HTML, or Markdown File"
       },
       {
         "command": "previewship.deployActiveHtml",
-        "title": "PreviewShip: Deploy Active HTML File"
+        "title": "PreviewShip: Deploy Active HTML or Markdown File"
       },
       {
         "command": "previewship.showUsage",

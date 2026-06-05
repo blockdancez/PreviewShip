@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { ApiClient } from './api-client.js';
 import { getApiKey, getServerUrl } from './config.js';
-import { packDirectory, packHtmlFile, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
+import { packDirectory, packHtmlFile, packMarkdownFile, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
 import { ApiError } from './types.js';
 import type { DeployOptions, DeployResult, DeploymentDetail, UsageResponse } from './types.js';
 
@@ -23,7 +23,7 @@ function createClient(): ApiClient {
   return new ApiClient(getServerUrl(), apiKey);
 }
 
-/** 部署目录或单个 HTML 文件（核心函数，供 CLI 和 MCP 调用） */
+/** 部署目录、单个 HTML 文件或单个 Markdown 文件（核心函数，供 CLI 和 MCP 调用） */
 export async function deploy(options: DeployOptions = {}): Promise<DeployResult> {
   const client = createClient();
 
@@ -38,10 +38,11 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
 
   const stat = fs.statSync(deployPath);
   const isHtmlFile = stat.isFile() && /\.html?$/i.test(deployPath);
-  if (!stat.isDirectory() && !isHtmlFile) {
+  const isMarkdownFile = stat.isFile() && /\.(md|markdown)$/i.test(deployPath);
+  if (!stat.isDirectory() && !isHtmlFile && !isMarkdownFile) {
     return {
       success: false,
-      error: { code: 'INVALID_PATH', message: `Deploy path must be a directory or a .html file: ${deployPath}` },
+      error: { code: 'INVALID_PATH', message: `Deploy path must be a directory, a .html file, or a .md file: ${deployPath}` },
     };
   }
 
@@ -63,7 +64,9 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   // 打包
   const { buffer: zipBuffer, fileCount } = isHtmlFile
     ? await packHtmlFile(deployPath)
-    : await packDirectory(deployPath, [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])]);
+    : isMarkdownFile
+      ? await packMarkdownFile(deployPath)
+      : await packDirectory(deployPath, [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])]);
 
   if (zipBuffer.length === 0 || fileCount === 0) {
     return {

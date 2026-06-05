@@ -6,7 +6,7 @@ import { ApiClient } from './api-client';
 import { StatusBar } from './status-bar';
 import { ApiError } from './types';
 import { showApiError } from './errors';
-import { packHtmlFile, packWorkspace } from './zipper';
+import { packHtmlFile, packMarkdownFile, packWorkspace } from './zipper';
 
 /** 常见构建产物目录，按优先级排列 */
 const BUILD_OUTPUT_DIRS = ['dist', 'build', 'out', '.output'];
@@ -16,55 +16,66 @@ interface ExecuteDeployOptions {
   targetUri?: vscode.Uri;
 }
 
-type DeployKind = 'directory' | 'html';
+type DeployKind = 'directory' | 'html' | 'markdown';
+type DeployableFileKind = 'html' | 'markdown';
 
 function isHtmlFile(filePath: string): boolean {
   return /\.html?$/i.test(filePath);
 }
 
-function getActiveHtmlDocument(): vscode.TextDocument | null {
+function isMarkdownFile(filePath: string): boolean {
+  return /\.(md|markdown)$/i.test(filePath);
+}
+
+function getFileKind(filePath: string): DeployableFileKind | null {
+  if (isHtmlFile(filePath)) return 'html';
+  if (isMarkdownFile(filePath)) return 'markdown';
+  return null;
+}
+
+function getActiveDeployableDocument(): vscode.TextDocument | null {
   const activeDocument = vscode.window.activeTextEditor?.document;
   if (!activeDocument || activeDocument.isUntitled || activeDocument.uri.scheme !== 'file') {
     return null;
   }
 
   const activePath = activeDocument.uri.fsPath;
-  if (!isHtmlFile(activePath)) {
+  if (!getFileKind(activePath)) {
     return null;
   }
 
   return activeDocument;
 }
 
-function getHtmlDocumentByPath(filePath: string): vscode.TextDocument | null {
+function getDeployableDocumentByPath(filePath: string): vscode.TextDocument | null {
   const normalized = path.resolve(filePath);
   return vscode.workspace.textDocuments.find((document) => (
     document.uri.scheme === 'file'
     && path.resolve(document.uri.fsPath) === normalized
-    && isHtmlFile(document.uri.fsPath)
+    && !!getFileKind(document.uri.fsPath)
   )) ?? null;
 }
 
-function getHtmlPathFromUri(uri?: vscode.Uri): string | null {
+function getDeployablePathFromUri(uri?: vscode.Uri): string | null {
   if (!uri || uri.scheme !== 'file') return null;
-  return isHtmlFile(uri.fsPath) ? uri.fsPath : null;
+  return getFileKind(uri.fsPath) ? uri.fsPath : null;
 }
 
-function findRootHtmlFiles(workspacePath: string): string[] {
+function findRootDeployableFiles(workspacePath: string): string[] {
   try {
     return fs.readdirSync(workspacePath, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && isHtmlFile(entry.name))
+      .filter((entry) => entry.isFile() && !!getFileKind(entry.name))
       .map((entry) => path.join(workspacePath, entry.name));
   } catch {
     return [];
   }
 }
 
-async function ensureHtmlDocumentSaved(document: vscode.TextDocument): Promise<boolean> {
+async function ensureDeployableDocumentSaved(document: vscode.TextDocument): Promise<boolean> {
   if (!document.isDirty) return true;
 
   const action = await vscode.window.showWarningMessage(
-    'The active HTML file has unsaved changes.',
+    'The active file has unsaved changes.',
     'Save and Deploy',
     'Deploy Saved Version',
     'Cancel',
@@ -74,7 +85,7 @@ async function ensureHtmlDocumentSaved(document: vscode.TextDocument): Promise<b
 
   const saved = await document.save();
   if (!saved) {
-    vscode.window.showErrorMessage('Could not save the active HTML file before deployment.');
+    vscode.window.showErrorMessage('Could not save the active file before deployment.');
   }
   return saved;
 }
@@ -218,58 +229,59 @@ export async function executeDeploy(
 ): Promise<void> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   const workspacePath = workspaceFolder?.uri.fsPath;
-  const targetHtmlPath = getHtmlPathFromUri(options.targetUri);
-  const activeHtmlDocument = targetHtmlPath ? getHtmlDocumentByPath(targetHtmlPath) : getActiveHtmlDocument();
-  const activeHtmlPath = targetHtmlPath ?? activeHtmlDocument?.uri.fsPath ?? null;
+  const targetFilePath = getDeployablePathFromUri(options.targetUri);
+  const activeFileDocument = targetFilePath ? getDeployableDocumentByPath(targetFilePath) : getActiveDeployableDocument();
+  const activeFilePath = targetFilePath ?? activeFileDocument?.uri.fsPath ?? null;
   let deployKind: DeployKind = 'directory';
   let deployPath = workspacePath ?? '';
 
   if (options.activeHtmlOnly) {
-    if (!activeHtmlPath) {
-      const htmlFiles = workspacePath ? findRootHtmlFiles(workspacePath) : [];
-      if (htmlFiles.length === 1) {
-        deployKind = 'html';
-        deployPath = htmlFiles[0];
+    if (!activeFilePath) {
+      const deployableFiles = workspacePath ? findRootDeployableFiles(workspacePath) : [];
+      if (deployableFiles.length === 1) {
+        deployKind = getFileKind(deployableFiles[0]) ?? 'html';
+        deployPath = deployableFiles[0];
       } else {
-        vscode.window.showErrorMessage('Open or select a saved HTML file before running this command.');
+        vscode.window.showErrorMessage('Open or select a saved HTML or Markdown file before running this command.');
         return;
       }
     } else {
-      deployKind = 'html';
-      deployPath = activeHtmlPath;
+      deployKind = getFileKind(activeFilePath) ?? 'html';
+      deployPath = activeFilePath;
     }
   } else if (!workspacePath) {
-    if (!activeHtmlPath) {
-      vscode.window.showErrorMessage('Please open a workspace or a saved HTML file first.');
+    if (!activeFilePath) {
+      vscode.window.showErrorMessage('Please open a workspace or a saved HTML/Markdown file first.');
       return;
     }
-    deployKind = 'html';
-    deployPath = activeHtmlPath;
-  } else if (activeHtmlPath) {
+    deployKind = getFileKind(activeFilePath) ?? 'html';
+    deployPath = activeFilePath;
+  } else if (activeFilePath) {
+    const activeKind = getFileKind(activeFilePath) === 'markdown' ? 'Markdown' : 'HTML';
     const action = await vscode.window.showInformationMessage(
-      `Deploy active HTML file "${path.basename(activeHtmlPath)}" or the workspace?`,
-      'Deploy HTML File',
+      `Deploy active ${activeKind} file "${path.basename(activeFilePath)}" or the workspace?`,
+      `Deploy ${activeKind} File`,
       'Deploy Workspace',
       'Cancel',
     );
     if (action === 'Cancel' || !action) return;
-    if (action === 'Deploy HTML File') {
-      deployKind = 'html';
-      deployPath = activeHtmlPath;
+    if (action.startsWith('Deploy ') && action.endsWith(' File')) {
+      deployKind = getFileKind(activeFilePath) ?? 'html';
+      deployPath = activeFilePath;
     }
   } else {
-    const htmlFiles = findRootHtmlFiles(workspacePath);
+    const deployableFiles = findRootDeployableFiles(workspacePath);
     const hasRootIndex = fs.existsSync(path.join(workspacePath, 'index.html'))
       || fs.existsSync(path.join(workspacePath, 'index.htm'));
     const buildDirs = detectBuildDirs(workspacePath);
-    if (!hasRootIndex && buildDirs.length === 0 && htmlFiles.length === 1) {
-      deployKind = 'html';
-      deployPath = htmlFiles[0];
+    if (!hasRootIndex && buildDirs.length === 0 && deployableFiles.length === 1) {
+      deployKind = getFileKind(deployableFiles[0]) ?? 'html';
+      deployPath = deployableFiles[0];
     }
   }
 
-  if (deployKind === 'html' && activeHtmlDocument) {
-    const saved = await ensureHtmlDocumentSaved(activeHtmlDocument);
+  if (deployKind !== 'directory' && activeFileDocument) {
+    const saved = await ensureDeployableDocumentSaved(activeFileDocument);
     if (!saved) return;
   }
 
@@ -317,7 +329,7 @@ export async function executeDeploy(
   }
 
   // 5. 提示输入项目名
-  const defaultName = deployKind === 'html'
+  const defaultName = deployKind !== 'directory'
     ? path.basename(deployPath, path.extname(deployPath))
     : path.basename(workspacePath ?? deployPath);
   const projectName = await vscode.window.showInputBox({
@@ -333,7 +345,7 @@ export async function executeDeploy(
   });
   if (!projectName) return;
 
-  const deployDirName = deployKind === 'html'
+  const deployDirName = deployKind !== 'directory'
     ? path.basename(deployPath)
     : deployPath === workspacePath ? 'root' : path.basename(deployPath) + '/';
   console.log(`[PreviewShip] Deploy path: ${deployPath}`);
@@ -355,6 +367,8 @@ export async function executeDeploy(
         const excludePatterns = config.get<string[]>('excludePatterns', []);
         const zipBuffer = deployKind === 'html'
           ? await packHtmlFile(deployPath)
+          : deployKind === 'markdown'
+            ? await packMarkdownFile(deployPath)
           : await packWorkspace(deployPath, excludePatterns);
         const sizeMb = (zipBuffer.length / 1024 / 1024).toFixed(1);
 

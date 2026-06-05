@@ -1,8 +1,8 @@
 # PreviewShip MCP Server
 
-> Let AI coding agents publish HTML online, upload HTML files, and deploy static previews through MCP.
+> Let AI coding agents publish HTML/Markdown online, upload files, and deploy static previews through MCP.
 
-PreviewShip MCP gives Claude Code, Cursor, Windsurf, and any MCP-compatible client a native way to upload an HTML file to a website, host HTML online, deploy AI-generated pages, or publish a static build output folder as a shareable URL.
+PreviewShip MCP gives Claude Code, Cursor, Windsurf, and any MCP-compatible client a native way to upload an HTML or Markdown file to a website, host HTML/Markdown online, deploy AI-generated pages, or publish a static build output folder as a shareable URL.
 
 ## Setup
 
@@ -70,10 +70,10 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ### `deploy_preview`
 
-Deploy a static website or single HTML file to a preview environment.
+Deploy a static website, single HTML file, or Markdown document to a preview environment.
 
 **Parameters:**
-- `path` (optional) — Directory or single `.html` file to deploy. Defaults to current working directory.
+- `path` (optional) — Directory, single `.html` file, or Markdown file to deploy. Defaults to current working directory.
 - `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting name.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
 
@@ -83,6 +83,7 @@ Deploy a static website or single HTML file to a preview environment.
 > "Deploy this project to a preview"
 > "Deploy the dist folder"
 > "Deploy report.html and share the preview link"
+> "Deploy README.md and share the preview link"
 > "Publish this ChatGPT HTML as a website URL"
 > "Host page.html online and return the URL"
 > "Build the app, then deploy the generated dist folder"

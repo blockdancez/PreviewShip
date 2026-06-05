@@ -3,7 +3,8 @@ import { PassThrough } from 'node:stream';
 import * as fs from 'node:fs';
 
 const BUILD_OUTPUT_CONFIG_PATH = '.vercel/output/config.json';
-const STATIC_INDEX_PATH = '.vercel/output/static/index.html';
+const STATIC_HTML_INDEX_PATH = '.vercel/output/static/index.html';
+const STATIC_MARKDOWN_INDEX_PATH = '.vercel/output/static/index.md';
 
 /** 默认排除模式（与 VS Code 插件保持一致） */
 export const DEFAULT_EXCLUDE_PATTERNS = [
@@ -65,6 +66,18 @@ export function packDirectory(dirPath: string, excludePatterns: string[]): Promi
  * 这样 AI 生成的单文件 HTML 可以直接部署，无需用户手动创建目录。
  */
 export function packHtmlFile(filePath: string): Promise<{ buffer: Buffer; fileCount: number }> {
+  return packSingleFile(filePath, STATIC_HTML_INDEX_PATH);
+}
+
+/**
+ * 将单个 Markdown 文件打包为 Vercel Build Output API 静态站点。
+ * 后端会将 index.md 渲染为 index.html。
+ */
+export function packMarkdownFile(filePath: string): Promise<{ buffer: Buffer; fileCount: number }> {
+  return packSingleFile(filePath, STATIC_MARKDOWN_INDEX_PATH);
+}
+
+function packSingleFile(filePath: string, staticPath: string): Promise<{ buffer: Buffer; fileCount: number }> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     const passthrough = new PassThrough();
@@ -84,7 +97,7 @@ export function packHtmlFile(filePath: string): Promise<{ buffer: Buffer; fileCo
 
     archive.pipe(passthrough);
     archive.append(JSON.stringify({ version: 3 }), { name: BUILD_OUTPUT_CONFIG_PATH });
-    archive.append(fs.createReadStream(filePath), { name: STATIC_INDEX_PATH });
+    archive.append(fs.createReadStream(filePath), { name: staticPath });
     archive.finalize();
   });
 }
