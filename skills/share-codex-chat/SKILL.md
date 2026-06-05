@@ -200,12 +200,13 @@ If Python is unavailable, create a self-contained `index.html` manually with the
 - Inline CSS and minimal inline JavaScript only when needed.
 
 For a high-fidelity page:
-- Use a white page background. Match the real values measured from the Codex desktop app: chat body text **13px**, line-height **1.5**, font-weight **400**, text color **#1a1c1f**; inline code and code blocks **12px**; a compact top bar about **44px** tall; and a **narrow ~480px** main content column centered on the page (not a wide frame).
-- Font weights must only use the 400 / 500 / 600 / 700 steps (normal body 400, emphasis 600). Never use non-standard weights such as 510, 570, 650 or 720.
+- Use a white page background. Match the values measured live from the running Codex desktop app (CDP getComputedStyle): assistant body **14px**, user-bubble text **16px**, line-height **1.5**, font-weight **430**, text color **#1a1c1f**; code (inline + blocks) **14px**; a compact top bar ~**44px** tall; and a **768px** main content column (`--thread-content-max-width`) centered on the page. These scale with the user's Codex font-size setting — re-measure if exactness matters.
+- Links use the body text color (**#1a1c1f**) with **no underline** by default (underline on hover). Codex does not use blue links in the chat body.
+- Body weight is Codex's measured **430** (a variable-font weight); bold/emphasis is **600**; secondary UI text **500**. Do not invent other arbitrary heavy weights (510/570/650/720) — those were wrong guesses.
 - Use the native system font stack exactly as Codex does — text: `-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif`; code: `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. Do not use decorative web fonts, `SF Pro Text`, or external font downloads.
 - Avoid avatar circles, message-number labels, blue full-width cards, colored assistant panels, or centered report-style headers; those do not match the Codex chat UI shown in the app.
 - Keep Codex's compact spacing: moderate vertical gaps between turns (about 22px), compact gray user bubbles, and unframed assistant Markdown.
-- Render every assistant reply with the bottom action row shown in Codex: copy, like, dislike, open/expand icons, plus timestamp only when visible.
+- Render the assistant action row with Codex's real icons in order: **copy, like (thumbs-up), dislike (thumbs-up rotated 180°), fork-from-here (从此处开始分叉)** — the 4th is a fork, NOT a share/external-link icon. Each is a ~26px hit-area button with a 16px icon at ~49%-opacity foreground. Timestamp only when visible.
 - Use SVG icons for toolbar, skill chips, file cards, and action buttons. Avoid Unicode placeholder glyphs because system fallback fonts make them look inconsistent and low fidelity.
 - The first visible turn must be the first user/assistant exchange shown in the Codex chat UI, not hidden context such as AGENTS instructions or skill XML.
 - Long edit/progress text must not be directly spread across the assistant reply; keep it in collapsed processing details so the visible page stays like the Codex chat.
