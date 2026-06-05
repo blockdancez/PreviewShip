@@ -8,8 +8,16 @@ PreviewShip skills help AI coding agents turn generated work into shareable URLs
 
 ### Install
 
+Global install:
+
 ```bash
 npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
+```
+
+Project-local install, run from the project root:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
 ```
 
 ### Use In Codex
@@ -37,4 +45,3 @@ npx previewship login --key PREVIEWSHIP_API_KEY_HERE
 ```
 
 Users can create an API Key at [previewship.com](https://previewship.com).
-

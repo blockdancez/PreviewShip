@@ -113,8 +113,16 @@ Installable skills make PreviewShip available as a Codex-native workflow, not ju
 
 ### Install Share Codex Chat
 
+Global install:
+
 ```bash
 npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
+```
+
+Project-local install, run from the project root:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
 ```
 
 Then use it inside Codex:

@@ -9,7 +9,11 @@ Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI
 For Codex users, PreviewShip also ships an installable skill that turns the current Codex conversation into a high-fidelity share page and deploys it with this CLI:
 
 ```bash
+# Global install
 npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
+
+# Project-local install, run from the project root
+npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
 ```
 
 ## Quick Start
