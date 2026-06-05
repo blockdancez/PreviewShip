@@ -8,13 +8,18 @@
 !mcp/**
 !extension/
 !extension/**
+!skills/
+!skills/**
 !README.md
+!README-zh.md
 !.gitignore
 
 # 在跟踪目录内排除构建产物和依赖
 node_modules/
 dist/
 out/
+__pycache__/
+*.pyc
 *.vsix
 *.tgz
 .DS_Store

@@ -6,13 +6,14 @@ PreviewShip is a frontend preview deployment, HTML publishing, and Markdown publ
 
 ## Open Source Packages
 
-PreviewShip provides three open-source client packages:
+PreviewShip provides four open-source client packages:
 
 | Package | npm | Description |
 |---------|-----|-------------|
 | [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy from the terminal with one command |
 | [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native tool integration for AI coding agents |
 | [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy workspace or active HTML/Markdown file from your editor |
+| [Agent Skills](#agent-skills) | GitHub / `npx skills` | Installable skills for Codex workflows, including high-fidelity chat sharing |
 
 ## Deployment Methods
 
@@ -21,6 +22,7 @@ PreviewShip provides three open-source client packages:
 | CLI | `npx previewship deploy ./dist`, `./report.html`, or `./README.md` | Terminal, scripts, CI/CD, generated HTML/Markdown |
 | MCP Server | Say "deploy to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf |
 | VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, active HTML/Markdown files |
+| Agent Skill | `$share-codex-chat 分享当前 Codex 对话` | Publish a Codex conversation as a shareable high-fidelity chat page |
 | Web Console | Upload zip/html/markdown or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
 
 ## HTML Publishing Workflows
@@ -33,6 +35,7 @@ PreviewShip provides three open-source client packages:
 - [Paste HTML and get a URL](https://previewship.com/guides/paste-html-get-url)
 - [Turn ChatGPT HTML into a website](https://previewship.com/guides/chatgpt-html-to-website)
 - [Publish a Claude HTML artifact](https://previewship.com/guides/claude-html-artifact-to-url)
+- Share a Codex chat transcript as a public PreviewShip URL with the `share-codex-chat` skill
 
 ---
 
@@ -101,6 +104,26 @@ import { deploy, getStatus, getUsage } from 'previewship'
 import { ApiClient } from 'previewship'
 import { packDirectory, DEFAULT_EXCLUDE_PATTERNS } from 'previewship'
 ```
+
+---
+
+## Agent Skills
+
+Installable skills make PreviewShip available as a Codex-native workflow, not just a deployment command. The included `share-codex-chat` skill turns a Codex conversation into a high-fidelity HTML page and deploys it to PreviewShip, so users can share debugging sessions, implementation reviews, and AI-generated work without taking screenshots.
+
+### Install Share Codex Chat
+
+```bash
+npx skills add blockdancez/PrevewiShip --skill share-codex-chat -a codex -g --yes
+```
+
+Then use it inside Codex:
+
+```text
+$share-codex-chat 分享当前 Codex 对话
+```
+
+The skill preserves visible Codex UI elements such as user bubbles, assistant replies, uploaded image thumbnails, plugin mentions, collapsed processing details, file cards, and edited-file summaries. It filters hidden system/developer context and deploys the generated HTML through the PreviewShip CLI.
 
 ---
 
@@ -255,6 +278,7 @@ Important: PreviewShip hosts static artifacts; it does not run `npm install` or 
 - **CLI on npm**: [npmjs.com/package/previewship](https://www.npmjs.com/package/previewship)
 - **MCP on npm**: [npmjs.com/package/previewship-mcp](https://www.npmjs.com/package/previewship-mcp)
 - **VS Code Marketplace**: [marketplace.visualstudio.com](https://marketplace.visualstudio.com/items?itemName=previewship.previewship)
+- **Agent Skills**: [`skills/`](skills/)
 
 ## License
 

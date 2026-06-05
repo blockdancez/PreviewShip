@@ -6,6 +6,12 @@ Deploy static websites, single HTML files, and Markdown documents to a preview e
 
 Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI directly.
 
+For Codex users, PreviewShip also ships an installable skill that turns the current Codex conversation into a high-fidelity share page and deploys it with this CLI:
+
+```bash
+npx skills add blockdancez/PrevewiShip --skill share-codex-chat -a codex -g --yes
+```
+
 ## Quick Start
 
 ```bash
@@ -109,6 +115,14 @@ previewship deploy ./dist --json
 previewship deploy ./report.html --json
 previewship deploy ./README.md --json
 ```
+
+Codex users can install the repository skill and invoke it in chat:
+
+```text
+$share-codex-chat 分享当前 Codex 对话
+```
+
+The skill renders visible Codex conversation records, uploaded image thumbnails, plugin mentions, file cards, and edited-file summaries into a self-contained HTML page, then deploys that page through PreviewShip.
 
 ## Plans
 
