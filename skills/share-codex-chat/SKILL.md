@@ -192,7 +192,7 @@ If Python is unavailable, create a self-contained `index.html` manually with the
 - A Codex-like app shell with a white sticky top bar, left title, and right toolbar glyphs.
 - Right-aligned user messages as light-gray rounded bubbles.
 - Assistant messages as plain document-style content on white background, not bordered message cards.
-- Optional `已处理 <duration> ›` row and divider above assistant replies when the duration is known.
+- Optional `已处理 <duration> ›` row above assistant replies when the duration is known. Codex shows no divider line beneath it, so do not add a horizontal rule there.
 - Collapsible processing detail under the `已处理 <duration> ›` row when `details` or `workLog` exists; it must be closed by default to avoid making the UI noisy.
 - Codex-style file artifact cards and changed-file summary cards when those elements are visible.
 - Markdown rendering preserved as HTML.
@@ -200,10 +200,11 @@ If Python is unavailable, create a self-contained `index.html` manually with the
 - Inline CSS and minimal inline JavaScript only when needed.
 
 For a high-fidelity page:
-- Use a white page background, 70px desktop top bar, desktop body text around 18px CSS pixels, and a main content width close to the Codex desktop chat frame.
-- Use the native system font stack (`-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, `Segoe UI`, `PingFang SC`, etc.). Do not use decorative web fonts or external font downloads.
+- Use a white page background. Match the real values measured from the Codex desktop app: chat body text **13px**, line-height **1.5**, font-weight **400**, text color **#1a1c1f**; inline code and code blocks **12px**; a compact top bar about **44px** tall; and a **narrow ~480px** main content column centered on the page (not a wide frame).
+- Font weights must only use the 400 / 500 / 600 / 700 steps (normal body 400, emphasis 600). Never use non-standard weights such as 510, 570, 650 or 720.
+- Use the native system font stack exactly as Codex does — text: `-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif`; code: `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`. Do not use decorative web fonts, `SF Pro Text`, or external font downloads.
 - Avoid avatar circles, message-number labels, blue full-width cards, colored assistant panels, or centered report-style headers; those do not match the Codex chat UI shown in the app.
-- Keep stable spacing and typography: large vertical gaps between turns, compact gray user bubbles, and unframed assistant Markdown.
+- Keep Codex's compact spacing: moderate vertical gaps between turns (about 22px), compact gray user bubbles, and unframed assistant Markdown.
 - Render every assistant reply with the bottom action row shown in Codex: copy, like, dislike, open/expand icons, plus timestamp only when visible.
 - Use SVG icons for toolbar, skill chips, file cards, and action buttons. Avoid Unicode placeholder glyphs because system fallback fonts make them look inconsistent and low fidelity.
 - The first visible turn must be the first user/assistant exchange shown in the Codex chat UI, not hidden context such as AGENTS instructions or skill XML.
