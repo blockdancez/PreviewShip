@@ -2,7 +2,7 @@
 name: share-codex-chat
 description: Export the current Codex chat transcript into a self-contained HTML page that aims to 100% reproduce the visible chat content and Codex chat UI, then deploy it with the PreviewShip CLI. Use when the user wants to share a Codex conversation, publish chat history, generate a chat HTML page, or deploy the transcript to PreviewShip.
 license: MIT
-compatibility: Requires Node.js/npm for PreviewShip CLI deployment; optional Python 3 for the bundled renderer.
+compatibility: Requires Node.js (>=18) for both the PreviewShip CLI and the bundled markdown renderer — scripts/md.mjs renders markdown with Codex's own marked.esm.js so output matches Codex byte-for-byte; Python 3 runs scripts/render_chat_html.py.
 metadata:
   author: PreviewShip
   version: "1.1"
@@ -168,7 +168,7 @@ If a message must be kept in the transcript JSON for debugging but should not re
 
 ### 2. Generate the HTML
 
-Prefer the bundled renderer:
+Prefer the bundled renderer. It renders all markdown through Codex's own `marked.esm.js` (via `scripts/md.mjs`, requires Node.js), so GFM features (tables, task lists, strikethrough, autolinks, blockquote merging) and edge cases (e.g. `**` spanning a blank line is NOT bold) match Codex exactly. Do not hand-roll markdown parsing.
 
 ```bash
 SKILL_DIR="/path/to/share-codex-chat"

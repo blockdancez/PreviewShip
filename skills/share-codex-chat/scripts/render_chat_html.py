@@ -10,6 +10,7 @@ import io
 import json
 import mimetypes
 import re
+import subprocess
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -625,131 +626,49 @@ def infer_missing_attachments(content: str) -> list[dict[str, str]]:
     return [{"alt": f"用户上传图片 {idx + 1}", "missing": True} for idx in range(count)]
 
 
+_MD_CACHE: dict[str, str] = {}
+_MD_SCRIPT = str(Path(__file__).resolve().parent / "md.mjs")
+
+
+def _render_md_batch(originals: list[str]) -> None:
+    """用 Codex 同款 marked(node) 批量渲染 markdown，结果写入 _MD_CACHE。"""
+    pending = [m for m in dict.fromkeys(originals) if m not in _MD_CACHE]
+    if not pending:
+        return
+    payload = json.dumps({"items": [redact_sensitive_text(m) for m in pending]})
+    htmls: list[str] = []
+    try:
+        proc = subprocess.run(
+            ["node", _MD_SCRIPT],
+            input=payload, capture_output=True, text=True, timeout=60,
+        )
+        htmls = (json.loads(proc.stdout) or {}).get("html") or []
+    except Exception:
+        htmls = []
+    for i, m in enumerate(pending):
+        _MD_CACHE[m] = htmls[i] if i < len(htmls) else ("<p>" + escape_text(m) + "</p>")
+
+
+def prime_markdown(messages: list[dict[str, Any]]) -> None:
+    """渲染前一次性批量预渲染所有 markdown 片段，避免逐段启动 node。"""
+    bucket: list[str] = []
+    for msg in messages:
+        c = str(msg.get("content") or "")
+        if c.strip():
+            bucket.append(c)
+        for item in (msg.get("details") or []):
+            if str(item).strip():
+                bucket.append(str(item))
+    _render_md_batch(bucket)
+
+
 def render_markdown(markdown: str) -> str:
-    blocks: list[tuple[str, str, str]] = []
-
-    def keep_code(match: re.Match[str]) -> str:
-        idx = len(blocks)
-        lang = match.group(1).strip()
-        code = match.group(2).rstrip("\n")
-        blocks.append((f"@@CODE_BLOCK_{idx}@@", lang, code))
-        return blocks[-1][0]
-
-    protected = CODE_BLOCK_RE.sub(keep_code, markdown.replace("\r\n", "\n"))
-    parts: list[str] = []
-    list_type: str | None = None
-    lines = protected.split("\n")
-
-    def close_list() -> None:
-        nonlocal list_type
-        if list_type:
-            parts.append(f"</{list_type}>")
-            list_type = None
-
-    def open_list(kind: str) -> None:
-        nonlocal list_type
-        if list_type == kind:
-            return
-        close_list()
-        parts.append(f"<{kind}>")
-        list_type = kind
-
-    def is_table_separator(value: str) -> bool:
-        cells = split_table_row(value)
-        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.strip()) for cell in cells)
-
-    def split_table_row(value: str) -> list[str]:
-        stripped = value.strip()
-        if "|" not in stripped:
-            return []
-        if stripped.startswith("|"):
-            stripped = stripped[1:]
-        if stripped.endswith("|"):
-            stripped = stripped[:-1]
-        return [cell.strip() for cell in stripped.split("|")]
-
-    def render_table(header: list[str], rows: list[list[str]]) -> str:
-        head = "".join(f"<th>{render_inline(cell)}</th>" for cell in header)
-        body = ""
-        for row in rows:
-            cells = row[: len(header)] + [""] * max(0, len(header) - len(row))
-            body += "<tr>" + "".join(f"<td>{render_inline(cell)}</td>" for cell in cells[: len(header)]) + "</tr>"
-        return f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
-
-    i = 0
-    while i < len(lines):
-        raw_line = lines[i]
-        line = raw_line.rstrip()
-        if not line:
-            close_list()
-            i += 1
-            continue
-
-        code_match = re.fullmatch(r"@@CODE_BLOCK_(\d+)@@", line)
-        if code_match:
-            close_list()
-            _, lang, code = blocks[int(code_match.group(1))]
-            lang_label = escape_text(lang or "text")
-            parts.append(
-                f'<div class="code-block"><div class="code-head">{lang_label}</div>'
-                f"<pre><code>{escape_text(code)}</code></pre></div>"
-            )
-            i += 1
-            continue
-
-        if i + 1 < len(lines) and is_table_separator(lines[i + 1]):
-            header_cells = split_table_row(line)
-            table_rows: list[list[str]] = []
-            i += 2
-            while i < len(lines) and split_table_row(lines[i]):
-                table_rows.append(split_table_row(lines[i]))
-                i += 1
-            if header_cells:
-                close_list()
-                parts.append(render_table(header_cells, table_rows))
-                continue
-
-        heading = re.match(r"^(#{1,3})\s+(.+)$", line)
-        if heading:
-            close_list()
-            level = len(heading.group(1)) + 2
-            parts.append(f"<h{level}>{render_inline(heading.group(2))}</h{level}>")
-            i += 1
-            continue
-
-        item = re.match(r"^\s*[-*]\s+(.+)$", line)
-        if item:
-            open_list("ul")
-            parts.append(f"<li>{render_inline(item.group(1))}</li>")
-            i += 1
-            continue
-
-        ordered_item = re.match(r"^\s*\d+[.)]\s+(.+)$", line)
-        if ordered_item:
-            open_list("ol")
-            parts.append(f"<li>{render_inline(ordered_item.group(1))}</li>")
-            i += 1
-            continue
-
-        quote = re.match(r"^\s*>\s+(.+)$", line)
-        if quote:
-            close_list()
-            parts.append(f"<blockquote>{render_inline(quote.group(1))}</blockquote>")
-            i += 1
-            continue
-
-        if re.fullmatch(r"\s*[-*_]{3,}\s*", line):
-            close_list()
-            parts.append("<hr />")
-            i += 1
-            continue
-
-        close_list()
-        parts.append(f"<p>{render_inline(line)}</p>")
-        i += 1
-
-    close_list()
-    return "\n".join(parts)
+    md = markdown if isinstance(markdown, str) else str(markdown or "")
+    if not md.strip():
+        return ""
+    if md not in _MD_CACHE:
+        _render_md_batch([md])
+    return _MD_CACHE.get(md, "<p>" + escape_text(md) + "</p>")
 
 
 def normalize_messages(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1267,10 +1186,8 @@ CHAT_CSS = """
     .content p { margin: 0 0 12px; }
     .content p:last-child, .content ul:last-child, .content ol:last-child,
     .content .table-wrap:last-child, .content .code-block:last-child { margin-bottom: 0; }
-    .content h3, .content h4, .content h5 { margin: 18px 0 8px; line-height: 1.4; font-weight: 600; }
-    .content h3 { font-size: 16px; }
-    .content h4 { font-size: 15px; }
-    .content h5 { font-size: 14px; }
+    /* Codex 的 markdown 标题被 Tailwind reset 成 inherit：与正文同字号同字重(14px/430)，不放大不加粗 */
+    .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 { margin: 12px 0 4px; line-height: 1.5; font-size: 14px; font-weight: 430; }
     .content ul { margin: 0 0 12px; padding-left: 16px; }
     .content ol { margin: 0 0 12px; padding-left: 20px; }
     .content li + li { margin-top: 4px; }
@@ -1327,6 +1244,7 @@ CHAT_CSS = """
 def render_html(data: dict[str, Any]) -> str:
     title = str(data.get("title") or "Codex Chat Share")
     messages = normalize_messages(data)
+    prime_markdown(messages)
 
     rendered_messages = []
     for message in messages:
