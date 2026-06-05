@@ -10,6 +10,9 @@
 !extension/**
 !skills/
 !skills/**
+!docs/
+!docs/agent-tool.md
+!docs/share-codex-chat.md
 !README.md
 !README-zh.md
 !.gitignore
