@@ -168,6 +168,17 @@ If a message must be kept in the transcript JSON for debugging but should not re
 
 ### 2. Generate the HTML
 
+**Highest-fidelity mode (experimental): online 1:1 export.** For pixel-perfect parity with Codex, use `scripts/export_from_codex.cjs` to grab the *running* Codex's real rendered DOM plus its full CSS — the output IS Codex's own rendering, so every block/icon/color matches automatically. Requires launching Codex with a debug port first:
+
+```bash
+osascript -e 'quit app "Codex"'; open -a Codex --args --remote-debugging-port=9222
+node "$SKILL_DIR/scripts/export_from_codex.cjs" --match "会话标题关键词" --out /tmp/codex-chat-share/index.html
+```
+
+It connects to the Codex main window, switches to the matched conversation (or exports the current one), inlines all stylesheets + CSS variables + images, and centers content at the real 768px column. The Python renderer below is the offline fallback that does not require Codex to be running.
+
+
+
 Prefer the bundled renderer. It renders all markdown through Codex's own `marked.esm.js` (via `scripts/md.mjs`, requires Node.js), so GFM features (tables, task lists, strikethrough, autolinks, blockquote merging) and edge cases (e.g. `**` spanning a blank line is NOT bold) match Codex exactly. Do not hand-roll markdown parsing.
 
 ```bash
