@@ -493,7 +493,14 @@ def format_mention_label(label: str, target: str = "") -> str:
 
 def render_inline(text: str) -> str:
     escaped = escape_text(text)
-    escaped = re.sub(r"`([^`]+)`", lambda m: f"<code>{m.group(1)}</code>", escaped)
+    code_tokens: list[str] = []
+
+    def keep_inline_code(match: re.Match[str]) -> str:
+        idx = len(code_tokens)
+        code_tokens.append(f"<code>{match.group(1)}</code>")
+        return f"@@INLINE_CODE_{idx}@@"
+
+    escaped = re.sub(r"`([^`]+)`", keep_inline_code, escaped)
     escaped = re.sub(
         r"\[([^\]]+)\]\((plugin://[^)\s]+)\)",
         lambda m: render_mention_chip(m.group(1), m.group(2), "plugin"),
@@ -516,7 +523,7 @@ def render_inline(text: str) -> str:
     )
     escaped = re.sub(
         r"\[([^\]]+)\]\((/[^)\s]+SKILL\.md)\)",
-        lambda m: f'<a class="skill-link" href="#">{escape_text(format_skill_label(m.group(1)))}</a>',
+        lambda m: render_skill_chip(m.group(1)),
         escaped,
     )
     escaped = re.sub(
@@ -524,7 +531,24 @@ def render_inline(text: str) -> str:
         lambda m: f'<a href="#">{m.group(1)}</a>',
         escaped,
     )
+    escaped = re.sub(r"\*\*([^*\n][^*]*?)\*\*", lambda m: f"<strong>{m.group(1)}</strong>", escaped)
+    escaped = re.sub(r"__([^_\n][^_]*?)__", lambda m: f"<strong>{m.group(1)}</strong>", escaped)
+    escaped = re.sub(r"(?<!\*)\*([^*\n][^*]*?)\*(?!\*)", lambda m: f"<em>{m.group(1)}</em>", escaped)
+    for idx, token in enumerate(code_tokens):
+        escaped = escaped.replace(f"@@INLINE_CODE_{idx}@@", token)
     return escaped
+
+
+def render_skill_chip(label: str) -> str:
+    text = escape_text(format_skill_label(html.unescape(label)))
+    return f"""
+      <span class="skill-link">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3.5 18 6.8v6.6L12 16.7 6 13.4V6.8L12 3.5Z"></path>
+          <path d="M6.5 7 12 10.1 17.5 7"></path>
+          <path d="M12 10.1v6.1"></path>
+        </svg>{text}
+      </span>"""
 
 
 def render_mention_chip(label: str, target: str, kind: str) -> str:
@@ -613,18 +637,52 @@ def render_markdown(markdown: str) -> str:
 
     protected = CODE_BLOCK_RE.sub(keep_code, markdown.replace("\r\n", "\n"))
     parts: list[str] = []
-    list_open = False
+    list_type: str | None = None
+    lines = protected.split("\n")
 
     def close_list() -> None:
-        nonlocal list_open
-        if list_open:
-            parts.append("</ul>")
-            list_open = False
+        nonlocal list_type
+        if list_type:
+            parts.append(f"</{list_type}>")
+            list_type = None
 
-    for raw_line in protected.split("\n"):
+    def open_list(kind: str) -> None:
+        nonlocal list_type
+        if list_type == kind:
+            return
+        close_list()
+        parts.append(f"<{kind}>")
+        list_type = kind
+
+    def is_table_separator(value: str) -> bool:
+        cells = split_table_row(value)
+        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.strip()) for cell in cells)
+
+    def split_table_row(value: str) -> list[str]:
+        stripped = value.strip()
+        if "|" not in stripped:
+            return []
+        if stripped.startswith("|"):
+            stripped = stripped[1:]
+        if stripped.endswith("|"):
+            stripped = stripped[:-1]
+        return [cell.strip() for cell in stripped.split("|")]
+
+    def render_table(header: list[str], rows: list[list[str]]) -> str:
+        head = "".join(f"<th>{render_inline(cell)}</th>" for cell in header)
+        body = ""
+        for row in rows:
+            cells = row[: len(header)] + [""] * max(0, len(header) - len(row))
+            body += "<tr>" + "".join(f"<td>{render_inline(cell)}</td>" for cell in cells[: len(header)]) + "</tr>"
+        return f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+
+    i = 0
+    while i < len(lines):
+        raw_line = lines[i]
         line = raw_line.rstrip()
         if not line:
             close_list()
+            i += 1
             continue
 
         code_match = re.fullmatch(r"@@CODE_BLOCK_(\d+)@@", line)
@@ -636,25 +694,59 @@ def render_markdown(markdown: str) -> str:
                 f'<div class="code-block"><div class="code-head">{lang_label}</div>'
                 f"<pre><code>{escape_text(code)}</code></pre></div>"
             )
+            i += 1
             continue
+
+        if i + 1 < len(lines) and is_table_separator(lines[i + 1]):
+            header_cells = split_table_row(line)
+            table_rows: list[list[str]] = []
+            i += 2
+            while i < len(lines) and split_table_row(lines[i]):
+                table_rows.append(split_table_row(lines[i]))
+                i += 1
+            if header_cells:
+                close_list()
+                parts.append(render_table(header_cells, table_rows))
+                continue
 
         heading = re.match(r"^(#{1,3})\s+(.+)$", line)
         if heading:
             close_list()
             level = len(heading.group(1)) + 2
             parts.append(f"<h{level}>{render_inline(heading.group(2))}</h{level}>")
+            i += 1
             continue
 
         item = re.match(r"^\s*[-*]\s+(.+)$", line)
         if item:
-            if not list_open:
-                parts.append("<ul>")
-                list_open = True
+            open_list("ul")
             parts.append(f"<li>{render_inline(item.group(1))}</li>")
+            i += 1
+            continue
+
+        ordered_item = re.match(r"^\s*\d+[.)]\s+(.+)$", line)
+        if ordered_item:
+            open_list("ol")
+            parts.append(f"<li>{render_inline(ordered_item.group(1))}</li>")
+            i += 1
+            continue
+
+        quote = re.match(r"^\s*>\s+(.+)$", line)
+        if quote:
+            close_list()
+            parts.append(f"<blockquote>{render_inline(quote.group(1))}</blockquote>")
+            i += 1
+            continue
+
+        if re.fullmatch(r"\s*[-*_]{3,}\s*", line):
+            close_list()
+            parts.append("<hr />")
+            i += 1
             continue
 
         close_list()
         parts.append(f"<p>{render_inline(line)}</p>")
+        i += 1
 
     close_list()
     return "\n".join(parts)
@@ -698,7 +790,15 @@ def normalize_messages(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def normalize_details(message: dict[str, Any]) -> list[str]:
-    raw = message.get("details", message.get("workLog", message.get("work_log", [])))
+    raw = (
+        message.get("details")
+        or message.get("workLog")
+        or message.get("workLogs")
+        or message.get("work_log")
+        or message.get("processing")
+        or message.get("processingDetails")
+        or []
+    )
     if isinstance(raw, str):
         return [raw.strip()] if raw.strip() else []
     if isinstance(raw, list):
@@ -856,10 +956,9 @@ def render_artifact_card(artifact: Any) -> str:
         return ""
     title = str(artifact.get("title") or artifact.get("name") or "Artifact")
     subtitle = str(artifact.get("subtitle") or artifact.get("type") or "文档")
-    icon = str(artifact.get("icon") or "◇")
     return f"""
           <section class="artifact-card">
-            <div class="card-icon" aria-hidden="true">{escape_text(icon)}</div>
+            {render_card_icon("file")}
             <div>
               <div class="artifact-title">{escape_text(title)}</div>
               <div class="artifact-subtitle">{escape_text(subtitle)}</div>
@@ -891,7 +990,7 @@ def render_changes_card(changes: list[Any]) -> str:
     return f"""
           <section class="changes-card">
             <div class="changes-head">
-              <div class="card-icon" aria-hidden="true">▣</div>
+              {render_card_icon("changes")}
               <div>
                 <div class="changes-title">已编辑 {len(rows)} 个文件</div>
                 <div class="changes-delta"><span class="delta-plus">+{total_add}</span> <span class="delta-minus">-{total_del}</span></div>
@@ -903,6 +1002,25 @@ def render_changes_card(changes: list[Any]) -> str:
             </div>
             {''.join(rows)}
           </section>"""
+
+
+def render_card_icon(kind: str) -> str:
+    if kind == "changes":
+        path = (
+            '<rect x="6.5" y="4.5" width="11" height="15" rx="2.5"></rect>'
+            '<path d="M9.5 9.5h5M12 7v5"></path>'
+            '<path d="M9.5 15h5"></path>'
+        )
+    else:
+        path = (
+            '<path d="M12 3.5 18 6.8v6.6L12 16.7 6 13.4V6.8L12 3.5Z"></path>'
+            '<path d="M6.5 7 12 10.1 17.5 7"></path>'
+            '<path d="M12 10.1v6.1"></path>'
+        )
+    return f"""
+            <div class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{path}</svg>
+            </div>"""
 
 
 def render_assistant_message(message: dict[str, Any]) -> str:
@@ -959,15 +1077,14 @@ def render_processing_status(duration: str, details: list[str]) -> str:
 
 def render_action_bar(message: dict[str, Any]) -> str:
     timestamp = str(message.get("timestamp") or "").strip()
-    if not timestamp:
-        return ""
+    timestamp_html = f"<span>{escape_text(timestamp)}</span>" if timestamp else ""
     return f"""
           <div class="action-bar" aria-label="消息操作">
-            <span aria-hidden="true">▢</span>
-            <span aria-hidden="true">♡</span>
-            <span aria-hidden="true">♧</span>
-            <span aria-hidden="true">↱</span>
-            <span>{escape_text(timestamp)}</span>
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"></path><path d="M4 15H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 11v10"></path><path d="M15 5.5 14 11h6.2a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 19.2 21H7"></path><path d="M7 11H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3"></path></svg></span>
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 13V3"></path><path d="M15 18.5 14 13h6.2a2 2 0 0 0 2-2.3l-1-6A2 2 0 0 0 19.2 3H7"></path><path d="M7 13H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"></path></svg></span>
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg></span>
+            {timestamp_html}
           </div>"""
 
 
@@ -993,15 +1110,15 @@ def render_html(data: dict[str, Any]) -> str:
     :root {{
       color-scheme: light;
       --bg: #ffffff;
-      --text: #202124;
+      --text: #1f2328;
       --muted: #8f9095;
-      --line: #ededed;
-      --user: #f4f4f4;
-      --link: #1f83e6;
+      --line: #ebebeb;
+      --user: #f3f3f3;
+      --link: #1a73e8;
       --chip: #eeeeee;
       --card: #ffffff;
-      --code-bg: #f6f6f6;
-      --code-border: #e4e4e4;
+      --code-bg: #f2f2f2;
+      --code-border: #dfdfdf;
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -1009,9 +1126,13 @@ def render_html(data: dict[str, Any]) -> str:
       min-height: 100vh;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 18px;
-      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      font-kerning: normal;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
     }}
     .app {{
       min-height: 100vh;
@@ -1041,8 +1162,8 @@ def render_html(data: dict[str, Any]) -> str:
     }}
     h1 {{
       margin: 0;
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 22px;
+      font-weight: 650;
       letter-spacing: 0;
       white-space: nowrap;
       overflow: hidden;
@@ -1064,6 +1185,15 @@ def render_html(data: dict[str, Any]) -> str:
       color: currentColor;
       padding: 0;
     }}
+    .tool-button svg {{
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }}
     .model-picker {{
       display: flex;
       align-items: center;
@@ -1077,21 +1207,21 @@ def render_html(data: dict[str, Any]) -> str:
       color: #5f6368;
     }}
     main {{
-      width: min(100%, 1270px);
+      width: min(100%, 1180px);
       margin: 0 auto;
-      padding: 38px 38px 80px;
+      padding: 34px 38px 86px;
     }}
     .message {{
-      margin: 0 0 68px;
+      margin: 0 0 62px;
     }}
     .message-user {{
       display: flex;
       justify-content: flex-end;
-      padding-left: 236px;
+      padding-left: min(240px, 22vw);
     }}
     .user-stack {{
       display: flex;
-      max-width: 908px;
+      max-width: min(900px, 74vw);
       flex-direction: column;
       align-items: flex-end;
       gap: 10px;
@@ -1103,8 +1233,8 @@ def render_html(data: dict[str, Any]) -> str:
       min-height: 0;
     }}
     .attachment-thumb {{
-      width: 72px;
-      height: 72px;
+      width: 84px;
+      height: 84px;
       margin: 0;
       overflow: hidden;
       border: 1px solid #dedede;
@@ -1142,19 +1272,22 @@ def render_html(data: dict[str, Any]) -> str:
       display: block;
     }}
     .user-bubble {{
-      max-width: 908px;
-      border-radius: 21px;
+      max-width: min(900px, 74vw);
+      border-radius: 20px;
       background: var(--user);
-      padding: 11px 16px;
-      font-weight: 600;
-      line-height: 1.5;
+      padding: 10px 16px;
+      font-size: 17px;
+      font-weight: 570;
+      line-height: 1.48;
+      color: #202124;
     }}
     .assistant-status {{
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 0 0 12px;
-      color: #8d8f94;
+      color: #8b8e93;
+      font-size: 18px;
       font-weight: 600;
       cursor: default;
       list-style: none;
@@ -1200,32 +1333,38 @@ def render_html(data: dict[str, Any]) -> str:
     .assistant-body {{
       max-width: 100%;
       color: #202124;
-      font-weight: 500;
+      font-size: 18px;
+      font-weight: 510;
+      line-height: 1.58;
     }}
     .artifact-card,
     .changes-card {{
       min-width: 0;
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 11px;
       background: var(--card);
       overflow: hidden;
-      margin: 20px 0;
+      margin: 18px 0;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.025);
     }}
     .artifact-card {{
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 14px 20px;
+      padding: 14px 18px;
     }}
     .card-icon {{
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
       display: grid;
       place-items: center;
       border-radius: 12px;
       background: #f7f7f7;
       color: #6d7075;
-      font-size: 26px;
+    }}
+    .card-icon svg {{
+      width: 27px;
+      height: 27px;
     }}
     .artifact-title,
     .changes-title {{
@@ -1241,7 +1380,7 @@ def render_html(data: dict[str, Any]) -> str:
       grid-template-columns: 52px 1fr auto;
       gap: 16px;
       align-items: center;
-      padding: 14px 20px;
+      padding: 14px 18px;
       border-bottom: 1px solid rgba(229, 225, 216, 0.78);
     }}
     .changes-actions {{
@@ -1251,11 +1390,18 @@ def render_html(data: dict[str, Any]) -> str:
       color: #202124;
       font-weight: 650;
     }}
+    .changes-actions span:last-child {{
+      padding: 7px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+    }}
     .changes-row {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 18px;
-      padding: 9px 20px;
+      padding: 9px 18px;
       border-top: 1px solid #f1f1f1;
     }}
     .path {{
@@ -1271,10 +1417,12 @@ def render_html(data: dict[str, Any]) -> str:
       overflow-wrap: anywhere;
     }}
     .content p {{
-      margin: 0 0 17px;
+      margin: 0 0 16px;
     }}
     .content p:last-child,
     .content ul:last-child,
+    .content ol:last-child,
+    .content .table-wrap:last-child,
     .content .code-block:last-child {{
       margin-bottom: 0;
     }}
@@ -1284,14 +1432,63 @@ def render_html(data: dict[str, Any]) -> str:
       margin: 24px 0 10px;
       font-size: 18px;
       line-height: 1.35;
-      font-weight: 750;
+      font-weight: 700;
     }}
     .content ul {{
       margin: 0 0 18px;
       padding-left: 28px;
     }}
+    .content ol {{
+      margin: 0 0 18px;
+      padding-left: 30px;
+    }}
     .content li + li {{
       margin-top: 8px;
+    }}
+    .content strong {{
+      font-weight: 720;
+    }}
+    .content em {{
+      font-style: italic;
+    }}
+    .content blockquote {{
+      margin: 14px 0 18px;
+      padding: 8px 0 8px 15px;
+      border-left: 3px solid #d6d6d6;
+      color: #5f6368;
+    }}
+    .content hr {{
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 22px 0;
+    }}
+    .table-wrap {{
+      margin: 16px 0 18px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+    }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+      font-size: 15px;
+      line-height: 1.45;
+    }}
+    th,
+    td {{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }}
+    th {{
+      background: #fafafa;
+      font-weight: 700;
+    }}
+    tbody tr:last-child td {{
+      border-bottom: 0;
     }}
     a {{
       color: var(--link);
@@ -1308,12 +1505,12 @@ def render_html(data: dict[str, Any]) -> str:
       padding: 1px 7px;
       background: var(--chip);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.92em;
+      font-size: 0.9em;
     }}
     .code-block {{
       margin: 16px 0;
       overflow: hidden;
-      border-radius: 8px;
+      border-radius: 7px;
       border: 1px solid var(--code-border);
       background: var(--code-bg);
       color: #202124;
@@ -1322,11 +1519,11 @@ def render_html(data: dict[str, Any]) -> str:
       padding: 9px 13px;
       border-bottom: 1px solid var(--code-border);
       color: #737373;
-      font-size: 14px;
+      font-size: 13px;
     }}
     pre {{
       margin: 0;
-      padding: 16px;
+      padding: 14px;
       overflow-x: auto;
     }}
     pre code {{
@@ -1334,17 +1531,9 @@ def render_html(data: dict[str, Any]) -> str:
       padding: 0;
       background: transparent;
       color: inherit;
-      font-size: 14px;
-      line-height: 1.55;
+      font-size: 13px;
+      line-height: 1.5;
       white-space: pre;
-    }}
-    .skill-link {{
-      color: var(--link);
-      font-weight: 750;
-    }}
-    .skill-link::before {{
-      content: "◇";
-      margin-right: 6px;
     }}
     .mention-chip,
     .skill-link {{
@@ -1355,6 +1544,11 @@ def render_html(data: dict[str, Any]) -> str:
       color: var(--link);
       font-weight: 750;
       white-space: nowrap;
+    }}
+    .skill-link svg {{
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
     }}
     .mention-icon {{
       color: var(--link);
@@ -1375,6 +1569,15 @@ def render_html(data: dict[str, Any]) -> str:
       color: #96989d;
       font-size: 15px;
       font-weight: 600;
+    }}
+    .action-bar svg {{
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }}
     @media (max-width: 760px) {{
       body {{
@@ -1434,6 +1637,10 @@ def render_html(data: dict[str, Any]) -> str:
         border-radius: 10px;
         font-size: 22px;
       }}
+      .attachment-thumb {{
+        width: 72px;
+        height: 72px;
+      }}
       .artifact-subtitle,
       .changes-delta {{
         font-size: 14px;
@@ -1453,9 +1660,15 @@ def render_html(data: dict[str, Any]) -> str:
             <svg width="24" height="24" viewBox="0 0 24 24" role="img"><rect x="5" y="5" width="14" height="14" rx="3" fill="#202124"/><path d="M12 7.5 17 10v5l-5 2.5L7 15v-5l5-2.5Z" fill="#fff" opacity=".92"/></svg>
             <svg width="16" height="16" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <span class="tool-button" aria-hidden="true">☷</span>
-          <span class="tool-button" aria-hidden="true">▭</span>
-          <span class="tool-button" aria-hidden="true">▯</span>
+          <span class="tool-button" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7h3"></path><path d="M11 7h9"></path><path d="M4 12h3"></path><path d="M11 12h9"></path><path d="M4 17h3"></path><path d="M11 17h9"></path><circle cx="7" cy="7" r="1.5"></circle><circle cx="7" cy="12" r="1.5"></circle><circle cx="7" cy="17" r="1.5"></circle></svg>
+          </span>
+          <span class="tool-button" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"></rect><path d="M8 17h8"></path></svg>
+          </span>
+          <span class="tool-button" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2.5"></rect><path d="M15 4v16"></path></svg>
+          </span>
         </nav>
       </div>
     </header>

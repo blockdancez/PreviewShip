@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Node.js/npm for PreviewShip CLI deployment; optional Python 3 for the bundled renderer.
 metadata:
   author: PreviewShip
-  version: "1.0"
+  version: "1.1"
   repository: https://github.com/blockdancez/PreviewShip
   install: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
   installLocal: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
@@ -63,10 +63,12 @@ Build a visible transcript from the current conversation:
 
 When a local Codex session JSONL is available, prefer it over a hand-written transcript because it preserves real image data and event boundaries:
 - Use `event_msg.user_message` as the source of visible user turns. `payload.message` is bubble text; `payload.images` may contain `data:image/...` URLs; `payload.local_images` may contain local image paths.
+- `payload.text_elements` may mix text, image, skill, app, and mention records. Keep text in order, but render non-text records as their corresponding UI components instead of dumping raw JSON.
 - Use `event_msg.agent_message` with `phase=commentary` as processing detail text, not normal assistant body text.
 - Use `event_msg.agent_message` with `phase=final_answer` as the visible assistant answer.
 - Use `event_msg.task_complete.duration_ms` to render `已处理 <duration> ›` for the preceding assistant turn.
 - Use `event_msg.patch_apply_end.changes` as visible Codex attachment UI for the current assistant turn: render Markdown/document files as file cards when appropriate, and always render the edited-files summary card with per-file `+added -deleted` counts. Attach these cards after the final assistant answer, not inside processing details.
+- If `patch_apply_end` appears before the final answer, keep its artifacts/changes pending and attach them to that final answer. If no final answer arrives, render a compact assistant turn with status/details/cards so the UI component is not lost.
 - Ignore `response_item.reasoning`, `function_call`, `function_call_output`, `custom_tool_call`, `tool_search_*`, `turn_context`, `session_meta`, and `compacted` as visible transcript text.
 - Use `response_item.message.content[]` only as a fallback when `event_msg` lines are absent. Its `input_text` / `output_text` map to text, and `input_image.image_url` maps to an attachment thumbnail.
 - Never render `AGENTS.md instructions`, `<environment_context>`, full `<skill>...</skill>`, raw tool stdout/stderr, or compressed summaries as normal chat messages.
@@ -96,6 +98,18 @@ Treat the source conversation as structured records, not one Markdown string. Co
 - `status` / `duration`: render as `已处理 <duration> ›`.
 - `tool_call` / `tool_result` / hidden context: do not render as transcript text. Summarize only if the user explicitly asked to publish tool output.
 - `details` / `workLog`: render inside the collapsed processing detail associated with the assistant turn.
+
+Codex JSONL and exported transcript records can contain overlapping fields. Resolve them in this order:
+1. Visible `event_msg` records define the primary transcript.
+2. `response_item.message.content[]` is a fallback only when visible `event_msg` records are absent.
+3. File-change events are UI attachments, not prose.
+4. Tool calls, tool outputs, model reasoning, and environment/session metadata are execution traces, not chat UI.
+5. User-provided images should survive deployment: inline local/data images as compressed thumbnails; public URLs may remain URLs.
+
+Render Markdown with the structures Codex visibly supports:
+- Paragraphs, headings, bullet lists, ordered lists, blockquotes, horizontal rules, links, inline code, bold/italic, fenced code blocks, and simple pipe tables.
+- Inline code must be protected before applying bold/italic rules, otherwise literal `**` or `_` inside code can be styled incorrectly.
+- Code blocks should use a quiet gray background, fixed-width system monospace, and horizontal scrolling for long lines.
 
 Use this JSON shape for the bundled renderer:
 
@@ -187,8 +201,11 @@ If Python is unavailable, create a self-contained `index.html` manually with the
 
 For a high-fidelity page:
 - Use a white page background, 70px desktop top bar, desktop body text around 18px CSS pixels, and a main content width close to the Codex desktop chat frame.
+- Use the native system font stack (`-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, `Segoe UI`, `PingFang SC`, etc.). Do not use decorative web fonts or external font downloads.
 - Avoid avatar circles, message-number labels, blue full-width cards, colored assistant panels, or centered report-style headers; those do not match the Codex chat UI shown in the app.
 - Keep stable spacing and typography: large vertical gaps between turns, compact gray user bubbles, and unframed assistant Markdown.
+- Render every assistant reply with the bottom action row shown in Codex: copy, like, dislike, open/expand icons, plus timestamp only when visible.
+- Use SVG icons for toolbar, skill chips, file cards, and action buttons. Avoid Unicode placeholder glyphs because system fallback fonts make them look inconsistent and low fidelity.
 - The first visible turn must be the first user/assistant exchange shown in the Codex chat UI, not hidden context such as AGENTS instructions or skill XML.
 - Long edit/progress text must not be directly spread across the assistant reply; keep it in collapsed processing details so the visible page stays like the Codex chat.
 - Prefer exact copied UI text, visible message order, role labels, code formatting, and scroll behavior over decorative changes.
