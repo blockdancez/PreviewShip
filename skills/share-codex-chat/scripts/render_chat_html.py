@@ -1216,7 +1216,7 @@ CHAT_CSS = """
     }
     .assistant-status {
       display: flex; align-items: center; gap: 6px; margin: 0 0 8px;
-      color: var(--muted); font-size: 14px; font-weight: 500;
+      color: rgba(26, 28, 31, 0.65); font-size: 14px; font-weight: 430;
       cursor: default; list-style: none; user-select: none;
     }
     summary.assistant-status { width: fit-content; cursor: pointer; }
@@ -1224,11 +1224,14 @@ CHAT_CSS = """
     .assistant-status .chevron { font-size: 16px; color: var(--muted); transition: transform .16s ease; }
     .processing-details[open] .chevron { transform: rotate(90deg); }
     .processing-log {
-      max-height: 260px; overflow: auto; margin: 2px 0 12px; padding: 12px 14px;
-      border: 1px solid var(--line); border-radius: 12px; background: rgba(26,28,31,0.025);
-      color: #50545a; font-size: 13px; line-height: 1.5;
+      margin: 0 0 14px; padding-top: 8px;
+      border-top: 1px solid rgba(26, 28, 31, 0.05);
+      color: rgba(26, 28, 31, 0.65); font-size: 14px; line-height: 1.5;
     }
-    .processing-entry + .processing-entry { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .processing-log p { margin: 0 0 10px; }
+    .processing-log p:last-child, .processing-log :last-child { margin-bottom: 0; }
+    .processing-log :first-child { margin-top: 0; }
+    .processing-entry + .processing-entry { margin-top: 10px; }
     .assistant-rule { display: none; }
     .assistant-body { max-width: 100%; color: var(--text); font-size: 14px; font-weight: 430; line-height: 1.5; }
     .artifact-card, .changes-card {
