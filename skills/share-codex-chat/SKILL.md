@@ -6,8 +6,8 @@ compatibility: Requires Node.js/npm for PreviewShip CLI deployment; optional Pyt
 metadata:
   author: PreviewShip
   version: "1.0"
-  repository: https://github.com/blockdancez/PrevewiShip
-  install: npx skills add blockdancez/PrevewiShip --skill share-codex-chat -a codex -g --yes
+  repository: https://github.com/blockdancez/PreviewShip
+  install: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
 ---
 
 # Share Codex Chat
@@ -30,7 +30,7 @@ The skill must protect private context: never include hidden system/developer me
 Install from the PreviewShip repository:
 
 ```bash
-npx skills add blockdancez/PrevewiShip --skill share-codex-chat -a codex -g --yes
+npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
 ```
 
 ## Required output

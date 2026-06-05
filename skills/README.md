@@ -9,7 +9,7 @@ PreviewShip skills help AI coding agents turn generated work into shareable URLs
 ### Install
 
 ```bash
-npx skills add blockdancez/PrevewiShip --skill share-codex-chat -a codex -g --yes
+npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
 ```
 
 ### Use In Codex

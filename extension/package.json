@@ -9,7 +9,7 @@
   "homepage": "https://previewship.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/blockdancez/PrevewiShip"
+    "url": "https://github.com/blockdancez/PreviewShip"
   },
   "engines": {
     "vscode": "^1.85.0"
