@@ -86,27 +86,41 @@ function applyCodexClasses(html) {
   return html;
 }
 
-// 技能/提及/文件 chip + 外链处理（与 Codex inline-mention 视觉一致由 codex-styles.css 负责）
-const SKILL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 18 6.8v6.6L12 16.7 6 13.4V6.8L12 3.5Z"></path><path d="M6.5 7 12 10.1 17.5 7"></path><path d="M12 10.1v6.1"></path></svg>';
+// —— Codex inline-mention:brand-aware 颜色由 codex-styles.css 经 class 自动给;图标用 currentColor 继承该色 ——
+// 与 Codex 一致的类链(脱离原环境时,codex-styles.css 里这条 class 仍解析出 color-mix(link 80%, fg 20%))
+const MENTION_CLS = 'inline-mention-brand-aware font-medium text-[color:var(--inline-mention-color)] [--inline-mention-color:var(--inline-mention-resolved-base-color,var(--inline-mention-base-color))] [--inline-mention-base-color:color-mix(in_srgb,var(--color-token-text-link-foreground)_80%,var(--color-token-foreground)_20%)] group-hover/inline-mention:underline group-hover/inline-mention:decoration-dashed group-hover/inline-mention:underline-offset-2';
+const MENTION_ICONS = {
+  // 立方体(skill) / 文档(file) / 连接(app·plugin) —— 自绘干净图标,fill/stroke=currentColor
+  skill: '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M8 1.8 13.5 5v6L8 14.2 2.5 11V5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M2.6 5 8 8.1 13.4 5M8 8.1v6" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>',
+  file: '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M8.4 1.9H4.3a.8.8 0 0 0-.8.8v10.6a.8.8 0 0 0 .8.8h7.4a.8.8 0 0 0 .8-.8V5.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M8.3 2v3.9h4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>',
+  app: '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M6.4 9.6 9.6 6.4M6.6 4.6l1-1a2.7 2.7 0 0 1 3.8 3.8l-1 1M9.4 11.4l-1 1a2.7 2.7 0 0 1-3.8-3.8l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path></svg>',
+};
 function titleCaseKebab(s) {
   const cleaned = s.trim().replace(/^[@$]+/, '');
   if (/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(cleaned)) return cleaned.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
   return cleaned;
 }
-function skillChip(label) { return `<span class="skill-link">${SKILL_SVG}${escapeHtml(titleCaseKebab(label))}</span>`; }
-function mentionChip(label, target, kind) {
-  const name = titleCaseKebab(label) || (target.split('/').pop() || 'Mention').split('@')[0];
-  const icon = name === 'Chrome' ? '<span class="chrome-dot" aria-hidden="true"></span>' : `<span class="mention-icon" aria-hidden="true">${kind === 'plugin' ? '◎' : '◇'}</span>`;
-  return `<span class="mention-chip mention-${kind}" title="${escapeHtml(target)}">${icon}${escapeHtml(name)}</span>`;
+function inlineMention(label, kind) {
+  const icon = MENTION_ICONS[kind] || MENTION_ICONS.app;
+  const text = kind === 'file' ? (label.trim() || 'file') : titleCaseKebab(label);
+  return (
+    '<span class="group/inline-mention">' +
+    `<span class="${MENTION_CLS} px-0.5">` +
+    `<span class="relative mr-[3px] inline-block h-[1lh] w-4 align-bottom">${icon}</span>` +
+    `<span class="min-w-0 break-words">${escapeHtml(text)}</span>` +
+    '</span></span>'
+  );
 }
+// 把 marked 生成的链接改写成 Codex 的 inline-mention / 外链
 function postLinks(html) {
-  html = html.replace(/<a href="(\/[^"]*SKILL\.md)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => skillChip(label));
-  html = html.replace(/<a href="(plugin:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, h, label) => mentionChip(label, h, 'plugin'));
-  html = html.replace(/<a href="(app:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, h, label) => mentionChip(label, h, 'app'));
-  html = html.replace(/<a href="(\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => `<a href="#" class="${C.link}">${label}</a>`);
+  html = html.replace(/<a href="(\/[^"]*SKILL\.md)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => inlineMention(label, 'skill'));
+  html = html.replace(/<a href="(plugin:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => inlineMention(label, 'app'));
+  html = html.replace(/<a href="(app:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => inlineMention(label, 'app'));
+  html = html.replace(/<a href="(\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, _h, label) => inlineMention(label, 'file'));
   html = html.replace(/<a href="(https?:\/\/[^"]*)">/gi, `<a class="${C.link}" href="$1" target="_blank" rel="noreferrer">`);
   return html;
 }
+export { inlineMention, MENTION_CLS };
 
 let input = '';
 process.stdin.setEncoding('utf8');

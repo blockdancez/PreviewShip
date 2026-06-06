@@ -852,13 +852,66 @@ def shorten_label(label: str, max_len: int) -> str:
     return label if len(label) <= max_len else f"{label[:max_len]}…"
 
 
+# —— Codex inline-mention(与 md.mjs 同一套):brand-aware 颜色由 codex-styles.css 经 class 自动给 ——
+INLINE_MENTION_CLS = (
+    "inline-mention-brand-aware font-medium text-[color:var(--inline-mention-color)] "
+    "[--inline-mention-color:var(--inline-mention-resolved-base-color,var(--inline-mention-base-color))] "
+    "[--inline-mention-base-color:color-mix(in_srgb,var(--color-token-text-link-foreground)_80%,var(--color-token-foreground)_20%)] "
+    "group-hover/inline-mention:underline group-hover/inline-mention:decoration-dashed group-hover/inline-mention:underline-offset-2"
+)
+INLINE_LINK_CLS = "text-[color:var(--color-token-text-link-foreground)] hover:underline"
+MENTION_ICON = {
+    "skill": '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M8 1.8 13.5 5v6L8 14.2 2.5 11V5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M2.6 5 8 8.1 13.4 5M8 8.1v6" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>',
+    "file": '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M8.4 1.9H4.3a.8.8 0 0 0-.8.8v10.6a.8.8 0 0 0 .8.8h7.4a.8.8 0 0 0 .8-.8V5.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M8.3 2v3.9h4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>',
+    "app": '<svg viewBox="0 0 16 16" fill="none" class="icon-xs absolute top-1/2 -translate-y-1/2"><path d="M6.4 9.6 9.6 6.4M6.6 4.6l1-1a2.7 2.7 0 0 1 3.8 3.8l-1 1M9.4 11.4l-1 1a2.7 2.7 0 0 1-3.8-3.8l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path></svg>',
+}
+
+
+def inline_mention(label: str, kind: str) -> str:
+    icon = MENTION_ICON.get(kind, MENTION_ICON["app"])
+    if kind == "skill":
+        text = format_skill_label(label)
+    elif kind == "file":
+        text = label.strip() or "file"
+    else:
+        text = format_mention_label(label)
+    return (
+        '<span class="group/inline-mention">'
+        f'<span class="{INLINE_MENTION_CLS} px-0.5">'
+        f'<span class="relative mr-[3px] inline-block h-[1lh] w-4 align-bottom">{icon}</span>'
+        f'<span class="min-w-0 break-words">{escape_text(text)}</span>'
+        "</span></span>"
+    )
+
+
+def render_user_text(content: str) -> str:
+    """用户消息:保留 whitespace-pre-wrap 纯文本,但把 [label](target) 提及/文件/外链解析成 Codex inline-mention。"""
+    esc = escape_text(content)
+
+    def repl(m: "re.Match[str]") -> str:
+        label = html.unescape(m.group(1))
+        target = html.unescape(m.group(2))
+        if target.endswith("SKILL.md"):
+            return inline_mention(label, "skill")
+        if target.startswith(("plugin://", "app://")):
+            return inline_mention(label, "app")
+        if target.startswith(("http://", "https://")):
+            return f'<a class="{INLINE_LINK_CLS}" href="{escape_text(target)}" target="_blank" rel="noreferrer">{escape_text(label)}</a>'
+        if target.startswith("/") or target.startswith("~") or target.startswith("./"):
+            return inline_mention(label, "file")
+        return m.group(0)
+
+    return re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", repl, esc)
+
+
 def render_user_message(message: dict[str, Any]) -> str:
     # Codex 用户消息:右对齐灰色圆角气泡,正文是 whitespace-pre-wrap 纯文本(不走 markdown)
     attachments = "".join(render_attachment(item) for item in message.get("attachments", []))
     attachment_block = (
         f'<div class="my-2 flex flex-wrap items-end justify-end gap-2">{attachments}</div>' if attachments else ""
     )
-    text = escape_text(message.get("content") or "")
+    raw = str(message.get("content") or "")
+    text = render_user_text(raw)
     bubble = (
         f"""
           <div class="group flex w-full flex-col items-end justify-end gap-1">
@@ -868,7 +921,7 @@ def render_user_message(message: dict[str, Any]) -> str:
               </div>
             </div>
           </div>"""
-        if text.strip()
+        if raw.strip()
         else ""
     )
     return f"""
@@ -1301,6 +1354,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 [class*="rounded-lg"][class*="overflow-hidden"]{border:1px solid rgba(26,28,31,.08);background:rgba(26,28,31,.04);border-radius:10px;margin:16px 0}
 pre{margin:0;padding:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 a{color:#0b66c3;text-decoration:none}a:hover{text-decoration:underline}
+[class~="inline-mention-brand-aware"]{color:color-mix(in srgb,#0b66c3 80%,#1a1c1f 20%);font-weight:500;white-space:nowrap}
+[class~="group/inline-mention"] svg{width:14px;height:14px;vertical-align:-2px;margin-right:1px}
+[class~="group/inline-mention"]:hover [class~="inline-mention-brand-aware"]{text-decoration:underline}
+[class~="px-0.5"]{padding-left:2px;padding-right:2px}
 [aria-label="消息操作"] button{background:none;border:0;padding:4px;border-radius:8px;color:rgba(26,28,31,.5);cursor:default;display:inline-flex}
 [aria-label="消息操作"] button:hover{background:rgba(26,28,31,.06)}
 [class~="icon-xs"]{width:16px;height:16px}[class~="icon-2xs"]{width:14px;height:14px}[class~="rotate-180"]{transform:rotate(180deg)}svg{flex:0 0 auto}
