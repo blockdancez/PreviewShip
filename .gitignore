@@ -27,3 +27,6 @@ __pycache__/
 *.tgz
 .DS_Store
 *.log
+
+# Codex 真实样式表:本地自用资产,勿提交公开仓库
+skills/share-codex-chat/scripts/codex-styles.css

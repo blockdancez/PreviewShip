@@ -853,23 +853,29 @@ def shorten_label(label: str, max_len: int) -> str:
 
 
 def render_user_message(message: dict[str, Any]) -> str:
+    # Codex 用户消息:右对齐灰色圆角气泡,正文是 whitespace-pre-wrap 纯文本(不走 markdown)
     attachments = "".join(render_attachment(item) for item in message.get("attachments", []))
-    attachment_block = f'<div class="attachments">{attachments}</div>' if attachments else ""
+    attachment_block = (
+        f'<div class="my-2 flex flex-wrap items-end justify-end gap-2">{attachments}</div>' if attachments else ""
+    )
+    text = escape_text(message.get("content") or "")
     bubble = (
         f"""
-          <div class="user-bubble content">
-            {render_markdown(message["content"])}
+          <div class="group flex w-full flex-col items-end justify-end gap-1">
+            <div class="bg-token-foreground/5 max-w-[77%] min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2 text-left" aria-label="用户消息">
+              <div class="text-size-chat relative w-full min-w-0">
+                <div class="text-size-chat whitespace-pre-wrap">{text}</div>
+              </div>
+            </div>
           </div>"""
-        if str(message.get("content") or "").strip()
+        if text.strip()
         else ""
     )
     return f"""
-      <article class="message message-user">
-        <div class="user-stack">
-          {attachment_block}
-          {bubble}
-        </div>
-      </article>"""
+      <div class="flex flex-col items-end gap-2">
+        {attachment_block}
+        {bubble}
+      </div>"""
 
 
 def render_artifact_card(artifact: Any) -> str:
@@ -952,48 +958,49 @@ def render_assistant_message(message: dict[str, Any]) -> str:
     changes = render_changes_card(message.get("changes", []))
     action_bar = render_action_bar(message)
     body_content = render_markdown(message["content"]) if str(message.get("content") or "").strip() else ""
-    body = (
+    inner = (
         f"""
-        <div class="assistant-body content">
-          {body_content}
+        <div class="group flex min-w-0 flex-col">
+          <div class="[&>*:first-child]:mt-0 _markdownContent_x0d1c_43 [&>*:last-child]:mb-0 [&>ol:first-child]:mt-0 [&>ul:first-child]:mt-0">
+            {body_content}
+          </div>
           {artifacts}
           {changes}
           {action_bar}
         </div>"""
-        if body_content or artifacts or changes or action_bar
+        if body_content or artifacts or changes
         else ""
     )
     return f"""
-      <article class="message message-assistant">
+      <div class="flex flex-col gap-2">
         {status}
-        {body}
-      </article>"""
+        {inner}
+      </div>"""
+
+
+CHEVRON_SVG = (
+    '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="icon-2xs text-token-foreground/40 transition-transform duration-200">'
+    '<path d="M7.5 5 12.5 10 7.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
+)
 
 
 def render_processing_status(duration: str, details: list[str]) -> str:
+    # Codex 的「已处理 <时长> ›」折叠行 + 其下的细分隔线
     label = f"已处理 {duration}" if is_duration(duration) else "已处理"
-    if not details:
-        return f"""
-        <div class="assistant-status">
-          <span>{escape_text(label)}</span>
-          <span class="chevron">›</span>
-        </div>
-        <div class="assistant-rule"></div>"""
-
-    detail_html = "\n".join(
-        f'<div class="processing-entry">{render_markdown(item)}</div>' for item in details if item.strip()
-    )
-    return f"""
-        <details class="processing-details">
-          <summary class="assistant-status">
-            <span>{escape_text(label)}</span>
-            <span class="chevron">›</span>
-          </summary>
-          <div class="processing-log">
-            {detail_html}
-          </div>
-        </details>
-        <div class="assistant-rule"></div>"""
+    head = f'<span><span class="text-token-foreground/60">{escape_text(label)}</span></span>{CHEVRON_SVG}'
+    btn_cls = "text-size-chat hover:bg-token-bg-subtle inline-flex items-center gap-1 rounded-md border border-transparent"
+    divider = '<div class="text-size-chat pt-1 text-token-text-secondary"><div class="w-full border-t border-token-border-light"></div></div>'
+    if details:
+        log = "".join(
+            f'<div class="my-2 text-token-text-secondary">{render_markdown(item)}</div>' for item in details if item.strip()
+        )
+        inner = (
+            f'<details><summary class="{btn_cls}" style="list-style:none;cursor:pointer">{head}</summary>'
+            f'<div class="pt-1">{log}</div></details>'
+        )
+    else:
+        inner = f'<button type="button" class="{btn_cls}" aria-expanded="false">{head}</button>'
+    return f'<div class="flex flex-col"><div class="text-size-chat text-token-text-secondary">{inner}</div>{divider}</div>'
 
 
 COPY_ICON = """<svg viewBox="0 0 21 21" fill="none"><path d="M13.468 11.1216C13.468 10.4107 13.468 9.91717 13.4367 9.53369C13.4137 9.25191 13.3758 9.0622 13.3244 8.91846L13.2687 8.78858C13.1148 8.48652 12.8803 8.23344 12.593 8.05713L12.466 7.98584C12.308 7.90546 12.0963 7.84854 11.7209 7.81787C11.3374 7.78656 10.8439 7.78662 10.133 7.78662H7.29999C6.58895 7.78662 6.09562 7.78654 5.7121 7.81787C5.43015 7.84091 5.24064 7.87872 5.09686 7.93018L4.96698 7.98584C4.66487 8.13977 4.41184 8.37419 4.23554 8.66162L4.16522 8.78858C4.08477 8.94657 4.02794 9.15811 3.99725 9.53369C3.96594 9.91718 3.96503 10.4107 3.96503 11.1216V13.9546C3.96503 14.6656 3.96592 15.159 3.99725 15.5425C4.02796 15.9182 4.08471 16.1296 4.16522 16.2876L4.23554 16.4136C4.41185 16.7012 4.66472 16.9353 4.96698 17.0894L5.09686 17.146C5.24061 17.1974 5.43024 17.2343 5.7121 17.2573C6.09562 17.2887 6.58895 17.2896 7.29999 17.2896H10.133C10.8439 17.2896 11.3374 17.2886 11.7209 17.2573C12.0965 17.2266 12.308 17.1698 12.466 17.0894L12.593 17.019C12.8804 16.8427 13.1148 16.5897 13.2687 16.2876L13.3244 16.1577C13.3759 16.0139 13.4137 15.8244 13.4367 15.5425C13.468 15.159 13.468 14.6656 13.468 13.9546V11.1216ZM14.798 13.1196C15.2528 13.118 15.6011 13.1147 15.8879 13.0913C16.2634 13.0606 16.475 13.0038 16.633 12.9233L16.759 12.8521C17.0466 12.6757 17.2808 12.4228 17.4348 12.1206L17.4914 11.9907C17.5428 11.847 17.5797 11.6572 17.6027 11.3755C17.634 10.992 17.6349 10.4985 17.6349 9.7876V6.95459C17.6349 6.24355 17.6341 5.75022 17.6027 5.3667C17.5797 5.08484 17.5428 4.89522 17.4914 4.75147L17.4348 4.62158C17.2807 4.31933 17.0466 4.06645 16.759 3.89014L16.633 3.81982C16.475 3.73932 16.2636 3.68256 15.8879 3.65186C15.5044 3.62052 15.011 3.61963 14.3 3.61963H11.467C10.7561 3.61963 10.2626 3.62054 9.87909 3.65186C9.59738 3.67487 9.40759 3.71179 9.26386 3.76318L9.13397 3.81982C8.83175 3.97382 8.57885 4.20802 8.40253 4.49561L8.33124 4.62158C8.25079 4.77957 8.19396 4.99114 8.16327 5.3667C8.13984 5.65352 8.13561 6.00178 8.13397 6.45654H10.133C10.822 6.45654 11.3791 6.4559 11.8293 6.49268C12.2873 6.5301 12.6937 6.6093 13.0705 6.80127L13.2883 6.92334C13.7839 7.22739 14.1878 7.66313 14.4533 8.18408L14.5197 8.32666C14.6642 8.66318 14.7291 9.02433 14.7619 9.42529C14.7987 9.8755 14.798 10.4326 14.798 11.1216V13.1196ZM18.965 9.7876C18.965 10.4766 18.9657 11.0337 18.9289 11.4839C18.8961 11.8848 18.8311 12.246 18.6867 12.5825L18.6203 12.7251C18.3548 13.246 17.9509 13.6818 17.4553 13.9858L17.2365 14.1079C16.8599 14.2998 16.4541 14.3791 15.9963 14.4165C15.6592 14.444 15.2624 14.4481 14.7951 14.4497C14.7935 14.917 14.7894 15.3138 14.7619 15.6509C14.7292 16.0516 14.664 16.4122 14.5197 16.7485L14.4533 16.8911C14.1878 17.4122 13.7841 17.8487 13.2883 18.1528L13.0705 18.2749C12.6937 18.4669 12.2873 18.5461 11.8293 18.5835C11.3791 18.6203 10.822 18.6196 10.133 18.6196H7.29999C6.6109 18.6196 6.05394 18.6203 5.6037 18.5835C5.20305 18.5508 4.84233 18.4855 4.50604 18.3413L4.36347 18.2749C3.84243 18.0094 3.40584 17.6056 3.10175 17.1099L2.97968 16.8911C2.78787 16.5145 2.70849 16.1087 2.67108 15.6509C2.6343 15.2006 2.63495 14.6437 2.63495 13.9546V11.1216C2.63495 10.4326 2.63431 9.8755 2.67108 9.42529C2.7085 8.96729 2.78771 8.56084 2.97968 8.18408L3.10175 7.96631C3.40585 7.47049 3.84235 7.06679 4.36347 6.80127L4.50604 6.73486C4.84236 6.59059 5.20302 6.52542 5.6037 6.49268C5.9405 6.46516 6.33707 6.4601 6.80389 6.4585C6.8055 5.99167 6.81056 5.5951 6.83807 5.2583C6.87549 4.80047 6.95482 4.39471 7.14667 4.01807L7.26874 3.79932C7.5728 3.30371 8.00855 2.89973 8.52948 2.63428L8.67206 2.56787C9.00854 2.42345 9.36978 2.35844 9.77069 2.32568C10.2209 2.28891 10.778 2.28955 11.467 2.28955H14.3C14.9891 2.28955 15.546 2.2889 15.9963 2.32568C16.4541 2.3631 16.8599 2.44247 17.2365 2.63428L17.4553 2.75635C17.951 3.06044 18.3548 3.49703 18.6203 4.01807L18.6867 4.16065C18.8309 4.49694 18.8962 4.85765 18.9289 5.2583C18.9657 5.70854 18.965 6.2655 18.965 6.95459V9.7876Z" fill="currentColor"></path></svg>"""
@@ -1001,15 +1008,35 @@ THUMB_ICON = """<svg viewBox="0 0 20 21" fill="none"><path d="M10.9153 2.11274L1
 FORK_ICON = """<svg fill="currentColor" viewBox="0 0 20 20"><path d="M15.8 11.535c.367 0 .665.298.665.665v5a.665.665 0 0 1-.665.665h-5a.665.665 0 1 1 0-1.33h3.394l-3.565-3.564a.666.666 0 0 1 .942-.942l3.564 3.565V12.2c0-.367.298-.665.665-.665Zm0-9.4c.367 0 .665.298.665.665v5a.665.665 0 0 1-1.33 0V4.405l-5.128 5.128c-.323.324-.558.565-.842.74a2.668 2.668 0 0 1-.771.319c-.324.078-.662.073-1.12.073H1.93a.665.665 0 1 1 0-1.33h5.345c.52 0 .673-.005.809-.037.136-.033.266-.086.385-.16.12-.072.23-.177.598-.545l5.128-5.128H10.8a.665.665 0 0 1 0-1.33h5Z"></path></svg>"""
 
 
+ACTION_BTN_CLS = (
+    "border-token-border user-select-none cursor-interaction flex items-center gap-1 border whitespace-nowrap "
+    "rounded-full electron:rounded-md text-token-text-tertiary enabled:hover:bg-token-list-hover-background "
+    "border-transparent electron:p-1 flex items-center justify-center p-0.5"
+)
+
+
+def _icon(svg: str, extra: str = "") -> str:
+    return svg.replace("<svg ", f'<svg class="icon-xs {extra}" ', 1)
+
+
 def render_action_bar(message: dict[str, Any]) -> str:
+    # Codex 助手底部动作行:复制 / 喜欢 / 不喜欢(翻转) / 从此处开始分叉 + 可选时间戳
     timestamp = str(message.get("timestamp") or "").strip()
-    timestamp_html = f'<span class="action-time">{escape_text(timestamp)}</span>' if timestamp else ""
+    timestamp_html = (
+        f'<span class="ml-1.5 text-xs text-token-text-tertiary text-size-chat leading-5 text-token-input-placeholder-foreground">{escape_text(timestamp)}</span>'
+        if timestamp
+        else ""
+    )
+
+    def btn(svg: str, label: str, extra: str = "") -> str:
+        return f'<button type="button" class="{ACTION_BTN_CLS}" aria-label="{label}">{_icon(svg, extra)}</button>'
+
     return f"""
-          <div class="action-bar" aria-label="消息操作">
-            <span class="action-btn" aria-hidden="true">{COPY_ICON}</span>
-            <span class="action-btn" aria-hidden="true">{THUMB_ICON}</span>
-            <span class="action-btn action-flip" aria-hidden="true">{THUMB_ICON}</span>
-            <span class="action-btn" aria-hidden="true">{FORK_ICON}</span>
+          <div class="mt-1.5 flex h-5 items-center justify-start gap-0.5" aria-label="消息操作">
+            {btn(COPY_ICON, "复制")}
+            {btn(THUMB_ICON, "喜欢")}
+            {btn(THUMB_ICON, "不喜欢", "rotate-180")}
+            {btn(FORK_ICON, "从此处开始分叉")}
             {timestamp_html}
           </div>"""
 
@@ -1243,6 +1270,71 @@ CHAT_CSS = """
 """
 
 
+# 当本地存在 Codex 真实样式表时,用它 + electron-light 主题做到逐像素一致;否则用下面的精简后备。
+# 后备用 [class~="..."] 属性选择器命中 Codex 的 Tailwind class(免去特殊字符转义),只求"可读不破版"。
+FALLBACK_CSS = """
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#1a1c1f;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[class~="flex"]{display:flex}[class~="inline-flex"]{display:inline-flex}[class~="contents"]{display:contents}
+[class~="flex-col"]{flex-direction:column}
+[class~="items-end"]{align-items:flex-end}[class~="items-center"]{align-items:center}
+[class~="justify-end"]{justify-content:flex-end}[class~="justify-start"]{justify-content:flex-start}
+[class~="gap-3"]{gap:12px}[class~="gap-2"]{gap:8px}[class~="gap-1"]{gap:4px}[class~="gap-0.5"]{gap:2px}
+[class~="w-full"]{width:100%}[class~="min-w-0"]{min-width:0}[class~="relative"]{position:relative}[class~="h-5"]{height:20px}
+[class~="text-left"]{text-align:left}[class~="whitespace-pre-wrap"]{white-space:pre-wrap}[class~="whitespace-pre"]{white-space:pre}
+[class~="break-words"]{overflow-wrap:break-word}[class~="overflow-hidden"]{overflow:hidden}
+[class~="text-size-chat"]{font-size:14px}[class~="text-size-chat-sm"]{font-size:12.5px}
+[class~="bg-token-foreground/5"]{background:rgba(26,28,31,.05)}
+[class~="rounded-2xl"]{border-radius:16px}[class~="rounded-md"]{border-radius:6px}[class~="max-w-[77%]"]{max-width:77%}
+[class~="px-3"]{padding-left:12px;padding-right:12px}[class~="py-2"]{padding-top:8px;padding-bottom:8px}
+[class~="text-token-text-secondary"]{color:rgba(26,28,31,.65)}[class~="text-token-text-tertiary"]{color:rgba(26,28,31,.5)}
+[class~="text-token-foreground/60"]{color:rgba(26,28,31,.6)}[class~="text-xs"]{font-size:12px}
+[class~="border-t"]{border-top:1px solid #e9e9ec}[class~="ml-1.5"]{margin-left:6px}
+[class~="my-2"]{margin:8px 0}[class~="my-3"]{margin:12px 0}[class~="my-4"]{margin:16px 0}
+[class~="mt-0"]{margin-top:0}[class~="mb-4"]{margin-bottom:16px}[class~="mb-2"]{margin-bottom:8px}[class~="mb-1.5"]{margin-bottom:6px}
+[class~="mt-1.5"]{margin-top:6px}[class~="mt-3"]{margin-top:12px}[class~="mt-4"]{margin-top:16px}[class~="mt-5"]{margin-top:20px}[class~="pt-1"]{padding-top:4px}[class~="pl-4"]{padding-left:16px}
+[class~="list-disc"]{list-style:disc}[class~="list-decimal"]{list-style:decimal}
+[class~="heading-lg"]{font-size:18px;font-weight:600}[class~="heading-base"]{font-size:16px;font-weight:600}[class~="heading-subsection"]{font-size:14px;font-weight:600}
+[class~="font-semibold"]{font-weight:600}[class~="italic"]{font-style:italic}[class~="border-l-2"]{border-left:2px solid #d6d6d9}
+[class*="_inlineMarkdown_"]{background:rgba(26,28,31,.06);border-radius:4px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+[class*="rounded-lg"][class*="overflow-hidden"]{border:1px solid rgba(26,28,31,.08);background:rgba(26,28,31,.04);border-radius:10px;margin:16px 0}
+pre{margin:0;padding:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:#0b66c3;text-decoration:none}a:hover{text-decoration:underline}
+[aria-label="消息操作"] button{background:none;border:0;padding:4px;border-radius:8px;color:rgba(26,28,31,.5);cursor:default;display:inline-flex}
+[aria-label="消息操作"] button:hover{background:rgba(26,28,31,.06)}
+[class~="icon-xs"]{width:16px;height:16px}[class~="icon-2xs"]{width:14px;height:14px}[class~="rotate-180"]{transform:rotate(180deg)}svg{flex:0 0 auto}
+.skill-link,.mention-chip{display:inline-flex;align-items:center;gap:4px;font-weight:500}.skill-link svg{width:15px;height:15px}
+"""
+
+# 两种模式都叠加的布局/卡片样式(codex-styles.css 不含这些自定义卡片类)。
+LAYOUT_CSS = """
+html,body{margin:0;background:#fff}
+.share-wrap{max-width:768px;margin:0 auto;padding:28px 16px 64px;box-sizing:border-box}
+.share-wrap [data-thread-find-target=conversation]{height:auto!important;max-height:none!important;overflow:visible!important}
+.artifact-card,.changes-card{border:1px solid var(--color-token-border,#e9e9ec);border-radius:12px;background:#fff;margin:12px 0;overflow:hidden}
+.artifact-card{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.changes-head{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--color-token-border,#e9e9ec)}
+.changes-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:7px 12px;border-top:1px solid #f1f1f1;font-size:13px}
+.delta-plus{color:#1a7f37}.delta-minus{color:#cf222e}.path{font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+.card-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:8px;background:rgba(26,28,31,.05)}.card-icon svg{width:20px;height:20px}
+.artifact-title,.changes-title{font-weight:600}.artifact-subtitle,.changes-delta{color:rgba(26,28,31,.6);font-size:13px}
+.changes-actions{display:flex;align-items:center;gap:12px;font-size:13px;color:rgba(26,28,31,.6)}
+.attachment-thumb{width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid #e9e9ec;margin:0}
+.attachment-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.attachment-missing{display:grid;place-items:center;color:#999;font-size:12px;text-align:center}
+"""
+
+
+def _load_codex_styles() -> "str | None":
+    """读取同目录下的 codex-styles.css(Codex 真实样式;本地自用资产,不随包公开分发)。"""
+    path = Path(__file__).resolve().parent / "codex-styles.css"
+    try:
+        return path.read_text(encoding="utf-8") if path.exists() else None
+    except Exception:
+        return None
+
+
 def render_html(data: dict[str, Any]) -> str:
     title = str(data.get("title") or "Codex Chat Share")
     messages = normalize_messages(data)
@@ -1250,49 +1342,35 @@ def render_html(data: dict[str, Any]) -> str:
 
     rendered_messages = []
     for message in messages:
-        role = message["role"]
-        if role == "user":
+        if message["role"] == "user":
             rendered_messages.append(render_user_message(message))
-            continue
-        rendered_messages.append(render_assistant_message(message))
+        else:
+            rendered_messages.append(render_assistant_message(message))
+
+    conversation = (
+        '<div data-thread-find-target="conversation" class="relative flex flex-col gap-3">'
+        + "".join(rendered_messages)
+        + "</div>"
+    )
+
+    codex_css = _load_codex_styles()
+    base_css = codex_css if codex_css else FALLBACK_CSS
+    html_class = "electron electron-light" if codex_css else "codex-clean"
 
     return f"""<!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="{html_class}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{escape_text(title)}</title>
   <style>
-{CHAT_CSS}
+{base_css}
+{LAYOUT_CSS}
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div class="header-inner">
-        <div class="brand">
-          <h1>{escape_text(title)}</h1>
-        </div>
-        <nav class="toolbar" aria-label="Codex toolbar">
-          <div class="model-picker" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" role="img"><rect x="5" y="5" width="14" height="14" rx="3" fill="#202124"/><path d="M12 7.5 17 10v5l-5 2.5L7 15v-5l5-2.5Z" fill="#fff" opacity=".92"/></svg>
-            <svg width="16" height="16" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <span class="tool-button" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 7h3"></path><path d="M11 7h9"></path><path d="M4 12h3"></path><path d="M11 12h9"></path><path d="M4 17h3"></path><path d="M11 17h9"></path><circle cx="7" cy="7" r="1.5"></circle><circle cx="7" cy="12" r="1.5"></circle><circle cx="7" cy="17" r="1.5"></circle></svg>
-          </span>
-          <span class="tool-button" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"></rect><path d="M8 17h8"></path></svg>
-          </span>
-          <span class="tool-button" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2.5"></rect><path d="M15 4v16"></path></svg>
-          </span>
-        </nav>
-      </div>
-    </header>
-    <main>
-{''.join(rendered_messages)}
-    </main>
+  <div class="share-wrap">
+{conversation}
   </div>
 </body>
 </html>
