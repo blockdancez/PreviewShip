@@ -6,9 +6,9 @@ compatibility: Requires Python 3 (renderer) and Node.js >=18 (Codex's own marked
 metadata:
   author: PreviewShip
   version: "2.0"
-  repository: https://github.com/FicsxzOrc/PreviewShip
-  install: npx skills add FicsxzOrc/PreviewShip --skill share-codex-chat -a codex -g --yes
-  installLocal: npx skills add FicsxzOrc/PreviewShip --skill share-codex-chat -a codex --yes
+  repository: https://github.com/blockdancez/PreviewShip
+  install: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --copy --yes
+  installLocal: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --copy --yes
 ---
 
 # Share Codex Chat
