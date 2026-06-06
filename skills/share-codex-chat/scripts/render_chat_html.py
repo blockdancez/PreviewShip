@@ -10,7 +10,9 @@ import io
 import json
 import mimetypes
 import re
+import sqlite3
 import subprocess
+import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -1297,14 +1299,58 @@ def render_html(data: dict[str, Any]) -> str:
 """
 
 
+def find_current_rollout() -> Path:
+    """定位用户当前桌面会话的 rollout jsonl —— 纯读 ~/.codex，绝不启动/连接 Codex。
+    优先读 state_5.sqlite 的 threads 表(桌面端权威会话库):取未归档、桌面来源(source='vscode')、
+    updated_at 最新的一条的 rollout_path;读不到则回退扫 sessions 目录,取桌面来源里 mtime 最新的文件。"""
+    home = Path.home()
+    db = home / ".codex" / "state_5.sqlite"
+    if db.exists():
+        try:
+            con = sqlite3.connect(str(db), timeout=2.0)
+            try:
+                row = con.execute(
+                    "SELECT rollout_path FROM threads "
+                    "WHERE archived=0 AND source='vscode' ORDER BY updated_at DESC LIMIT 1"
+                ).fetchone()
+            finally:
+                con.close()
+            if row and row[0] and Path(row[0]).exists():
+                return Path(row[0])
+        except Exception:
+            pass  # 落到目录扫描
+    sessions = home / ".codex" / "sessions"
+    if sessions.exists():
+        candidates = sorted(sessions.rglob("rollout-*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for path in candidates[:60]:
+            try:
+                with path.open("r", encoding="utf-8") as fh:
+                    head = fh.read(4096)
+            except Exception:
+                continue
+            if '"originator":"Codex Desktop"' in head or '"source":"vscode"' in head:
+                return path
+        if candidates:
+            return candidates[0]
+    raise FileNotFoundError("未找到 Codex 会话 rollout 文件(~/.codex/sessions);请确认 Codex 桌面端用过至少一个会话")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="渲染 Codex 聊天分享 HTML")
-    parser.add_argument("--input", required=True, help="transcript JSON 路径")
+    parser.add_argument("--input", help="transcript JSON / Codex rollout jsonl 路径")
+    parser.add_argument("--current", action="store_true",
+                        help="自动定位并使用当前 Codex 桌面会话的 rollout jsonl(纯读 ~/.codex,不连接 Codex)")
     parser.add_argument("--output", help="输出 HTML 路径")
     parser.add_argument("--print-project-name", action="store_true", help="输出 PreviewShip 项目名 slug")
     args = parser.parse_args()
 
-    input_path = Path(args.input)
+    if args.current:
+        input_path = find_current_rollout()
+        print(f"# 当前会话: {input_path}", file=sys.stderr)
+    elif args.input:
+        input_path = Path(args.input)
+    else:
+        parser.error("需要 --input <路径> 或 --current")
     data = load_transcript_data(input_path)
 
     if args.print_project_name:
