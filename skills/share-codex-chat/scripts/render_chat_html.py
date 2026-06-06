@@ -1380,6 +1380,12 @@ html,body{margin:0;background:#fff}
 .attachment-thumb{width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid #e9e9ec;margin:0}
 .attachment-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .attachment-missing{display:grid;place-items:center;color:#999;font-size:12px;text-align:center}
+/* 用户自定:正文字重 380(覆盖 --vscode-font-weight 这个变量 + 对正文元素直写兜底),加粗/标题仍 600 */
+:root{--vscode-font-weight:380}
+.share-wrap,.share-wrap .text-size-chat,.share-wrap p,.share-wrap li,.share-wrap span,.share-wrap div{font-weight:380}
+.share-wrap strong,.share-wrap b,.share-wrap [class~="font-semibold"],.share-wrap [class~="font-medium"],.share-wrap [class~="heading-lg"],.share-wrap [class~="heading-base"],.share-wrap [class~="heading-subsection"]{font-weight:600}
+/* 用户自定:链接统一蓝色 + 下划线(含 inline-mention chip) */
+.share-wrap a,.share-wrap [class*="inline-mention-brand-aware"]{color:var(--color-token-text-link-foreground,#339cff)!important;text-decoration:underline!important;text-underline-offset:2px}
 """
 
 
