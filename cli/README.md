@@ -76,7 +76,7 @@ previewship deploy --exclude "*.map" # Extra exclude patterns
 
 If you pass a directory, it should already be deployable static output. Do not point the CLI at an unbuilt React/Vue/Next source folder unless that folder itself contains the final `index.html` and browser assets.
 
-Project names are display names inside PreviewShip. Use a short name you recognize; PreviewShip automatically creates a deployment-safe hosting name.
+Project names are display names inside PreviewShip. Use a short name you recognize; PreviewShip automatically creates a deployment-safe hosting slug.
 
 ### `previewship status <id>`
 

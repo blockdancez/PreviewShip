@@ -51,7 +51,7 @@ Search for `PreviewShip` in the editor extension panel to install.
 1. Open the project folder you want to deploy.
 2. Execute `PreviewShip: Deploy Workspace, HTML, or Markdown File` in the command palette.
 3. If the active editor is an `.html` or Markdown file, choose whether to deploy that file or the workspace.
-4. Enter the project name (defaults to the folder name, HTML filename, or Markdown filename). PreviewShip automatically creates a deployment-safe hosting name.
+4. Enter the project name (defaults to the folder name, HTML filename, or Markdown filename). PreviewShip automatically creates a deployment-safe hosting slug.
 5. Wait for packaging, uploading, and building to complete.
 6. The preview link is automatically copied to the clipboard!
 

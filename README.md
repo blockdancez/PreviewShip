@@ -84,7 +84,7 @@ npx previewship deploy ./dist --json
 npx previewship deploy ./dist --exclude "*.map" --exclude "tests/**"
 ```
 
-Project names are display names inside PreviewShip. They can use natural short names; PreviewShip automatically creates a deployment-safe hosting name for Vercel.
+Project names are display names inside PreviewShip. They can use natural short names; PreviewShip automatically creates a deployment-safe hosting slug.
 
 ### Environment Variables
 

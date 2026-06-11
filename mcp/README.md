@@ -74,7 +74,7 @@ Deploy a static website, single HTML file, or Markdown document to a preview env
 
 **Parameters:**
 - `path` (optional) — Directory, single `.html` file, or Markdown file to deploy. Defaults to current working directory.
-- `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting name.
+- `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting slug.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
 
 **Important:** when `path` is a directory, it should be a static build artifact such as `dist`, `build`, `out`, or another folder containing `index.html` and browser assets. Ask the agent to run the framework build first. Do not deploy a raw source-code zip/folder with `package.json`, `src/`, and `node_modules` unless it is already static output.
