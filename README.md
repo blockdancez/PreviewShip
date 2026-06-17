@@ -260,7 +260,8 @@ cursor --install-extension previewship-0.1.8.vsix
 |-|-----:|----------:|----------:|
 | **Price** | $0 | $5.40/mo launch price (was $9/mo) | $50.40/yr launch price (was $84/yr, $4.20/mo) |
 | **Projects** | 1 | 10 | 20 |
-| **Daily Deploys** | 5 | 30 | 40 |
+| **Daily Deploys** | 5 | 50 | 80 |
+| **Monthly Deploys** | 20 | 300 | 500 |
 | **Max Zip Size** | 15 MB | 50 MB | 80 MB |
 | **Preview Expiry** | 3 days | 30 days | 365 days |
 | **PreviewShip Watermark** | Included | Removed | Removed |
