@@ -6,6 +6,8 @@ Deploy static websites, single HTML files, and Markdown documents to a preview e
 
 Works with any AI coding agent (Codex, OpenClaw, etc.) — they can call the CLI directly.
 
+Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a one-hour temporary HTML/Markdown preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
+
 For Codex users, PreviewShip also ships an installable skill that turns the current Codex conversation into a high-fidelity share page and deploys it with this CLI:
 
 ```bash
@@ -33,6 +35,10 @@ Important: deploy static build output, not a raw source-code folder. For framewo
 
 ## HTML Publishing Guides
 
+- [HTML to link](https://previewship.com/guides/html-to-link)
+- [Markdown to website](https://previewship.com/guides/markdown-to-website)
+- [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
+- [Codex website preview](https://previewship.com/guides/codex-website-preview)
 - [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
 - [HTML file hosting](https://previewship.com/guides/html-file-hosting)
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
@@ -127,6 +133,16 @@ $share-codex-chat 分享当前 Codex 对话
 ```
 
 The skill renders visible Codex conversation records, uploaded image thumbnails, plugin mentions, file cards, and edited-file summaries into a self-contained HTML page, then deploys that page through PreviewShip.
+
+## Directory Listings
+
+For MCP and agent directories such as Glama, Smithery, and mcp.so, describe PreviewShip as:
+
+- **Name:** PreviewShip
+- **Category:** Developer tools / deployment / static preview hosting
+- **Short description:** Deploy browser-ready HTML, Markdown, and static build artifacts from CLI, MCP, VS Code, Cursor, or browser upload and get a fixed preview URL.
+- **Install:** `npx previewship deploy ./dist` for CLI; `npx -y previewship-mcp` for MCP clients.
+- **Best keywords:** HTML to link, Markdown to website, AI-generated HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, static preview deploy.
 
 ## Plans
 

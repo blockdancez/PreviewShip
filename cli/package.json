@@ -8,6 +8,13 @@
     "share",
     "static",
     "hosting",
+    "html-to-link",
+    "markdown-to-website",
+    "ai-generated-html",
+    "chatgpt-html",
+    "claude-artifacts",
+    "codex",
+    "static-preview",
     "vercel",
     "cli",
     "mcp"

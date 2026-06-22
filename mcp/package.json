@@ -8,6 +8,13 @@
     "deploy",
     "preview",
     "previewship",
+    "html-to-link",
+    "markdown-to-website",
+    "ai-generated-html",
+    "chatgpt-html",
+    "claude-artifacts",
+    "codex",
+    "static-preview",
     "claude-code",
     "cursor",
     "windsurf",
@@ -36,7 +43,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
     "archiver": "^7.0.0",
-    "previewship": "^1.0.5",
+    "previewship": "^1.0.6",
     "zod": "^3.25.0"
   },
   "devDependencies": {

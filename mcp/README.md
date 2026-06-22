@@ -4,6 +4,8 @@
 
 PreviewShip MCP gives Claude Code, Cursor, Windsurf, and any MCP-compatible client a native way to upload an HTML or Markdown file to a website, host HTML/Markdown online, deploy AI-generated pages, or publish a static build output folder as a shareable URL.
 
+For a no-signup browser trial, use <https://previewship.com/try> to publish a one-hour temporary HTML/Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
+
 ## Setup
 
 ### Claude Code
@@ -91,6 +93,10 @@ Deploy a static website, single HTML file, or Markdown document to a preview env
 
 ## HTML Publishing Guides
 
+- [HTML to link](https://previewship.com/guides/html-to-link)
+- [Markdown to website](https://previewship.com/guides/markdown-to-website)
+- [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
+- [Codex website preview](https://previewship.com/guides/codex-website-preview)
 - [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
 - [HTML file hosting](https://previewship.com/guides/html-file-hosting)
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
@@ -108,6 +114,18 @@ Check deployment status.
 ### `show_usage`
 
 Show remaining deployment quota.
+
+## Directory Listings
+
+Use this metadata when submitting to Glama, Smithery, mcp.so, or other MCP directories:
+
+- **Name:** PreviewShip MCP
+- **Command:** `npx -y previewship-mcp`
+- **Category:** Deployment / static preview hosting / developer tools
+- **Short description:** Deploy browser-ready HTML, Markdown, and static build artifacts from AI coding agents and return fixed PreviewShip preview URLs.
+- **Tools:** `deploy_preview`, `check_deployment`, `show_usage`
+- **Best keywords:** MCP static hosting, HTML to link, Markdown to website, AI-generated HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview.
+- **Required env:** `PREVIEWSHIP_API_KEY`
 
 ## Plans
 
