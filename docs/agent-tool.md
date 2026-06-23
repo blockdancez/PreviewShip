@@ -228,6 +228,44 @@ API Key: ps_live_Wln...（前 12 位）
 
 ---
 
+#### `previewship deployments list`
+
+查询部署记录，支持状态、搜索、时间范围和分页过滤。
+
+```
+用法: previewship deployments list [选项]
+
+选项:
+  --status <status>  ALL / READY / SUPERSEDED / FAILED / EXPIRED / BLOCKED 等
+  -q, --query <text> 按项目名或预览 URL 搜索
+  --days <n>         最近 n 天
+  --page <n>         页码，从 0 开始
+  --size <n>         每页数量，最大 100
+  --json             JSON 格式输出
+```
+
+---
+
+#### `previewship projects list|get|access|versions|rollback|redeploy|delete`
+
+CLI 也提供项目管理能力，供人类、脚本和终端 Agent 使用。
+
+| 命令 | 作用 | 注意事项 |
+|------|------|----------|
+| `previewship projects list` | 列出项目、固定链接、状态、访问模式 | 可用 `--json` 给 Agent 解析 |
+| `previewship projects get <project-id>` | 查看单个项目详情 | 包含 `latestDeploymentId` 和 `canRedeploy` |
+| `previewship projects access <project-id>` | 查看访问控制 | 只展示公开/密码访问 |
+| `previewship projects access <project-id> --password <password>` | 设置密码访问 | Pro 能力 |
+| `previewship projects access <project-id> --public` | 切回公开访问 | 会清除已有项目密码 |
+| `previewship projects versions <project-id>` | 查看版本历史 | Free 3 个，Pro Monthly 10 个，Pro Yearly 40 个 |
+| `previewship projects rollback <project-id> <deployment-id> --confirm <project-name>` | 回滚固定链接 latest 指针 | 需要项目名确认，不创建新部署记录 |
+| `previewship projects redeploy <project-id>` | 使用 latest retained artifact 重新部署 | 用于恢复过期固定链接 |
+| `previewship projects delete <project-id> --confirm <project-name>` | 删除项目 | 删除固定链接、托管项目和 Showcase，且不可恢复 |
+
+Agent 调用 CLI 时，删除和回滚必须显式传 `--confirm <project-name>`，不要自动猜测确认值。
+
+---
+
 ### 1.3 环境变量
 
 | 环境变量 | 说明 | 优先级 |
@@ -383,6 +421,146 @@ API Key: ps_live_Wln...（前 12 位）
 
 ---
 
+#### Tool: `list_projects`
+
+列出 API Key 用户的项目、固定预览 URL、访问模式、最新部署状态和是否可重新部署。
+
+**输入参数：** 无。
+
+---
+
+#### Tool: `get_project`
+
+查询单个项目详情。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42
+}
+```
+
+---
+
+#### Tool: `delete_project`
+
+删除项目及其固定预览链接、托管项目、部署关联和 Showcase。此操作不可恢复。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42,
+  "confirmProjectName": "my-project"
+}
+```
+
+`confirmProjectName` 必须与项目名称完全一致，MCP Server 会先读取项目详情再校验，防止 Agent 误删。
+
+---
+
+#### Tool: `redeploy_project_latest`
+
+用项目 latest retained artifact 重新部署，适合恢复过期固定链接。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42
+}
+```
+
+---
+
+#### Tool: `get_project_access`
+
+查询项目公开/密码访问状态。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42
+}
+```
+
+---
+
+#### Tool: `set_project_access`
+
+设置项目访问模式。只支持 `PUBLIC` 与 `PASSWORD`。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42,
+  "visibility": "PASSWORD",
+  "password": "review-pass"
+}
+```
+
+切回公开访问并清除已有密码：
+
+```json
+{
+  "projectId": 42,
+  "visibility": "PUBLIC"
+}
+```
+
+---
+
+#### Tool: `list_project_versions`
+
+列出项目版本历史和可回滚状态。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42
+}
+```
+
+---
+
+#### Tool: `rollback_project_version`
+
+将固定项目链接回滚到某个 retained 历史部署。回滚只切换 latest 指针，不创建新部署记录。
+
+**输入参数：**
+
+```json
+{
+  "projectId": 42,
+  "deploymentId": 105,
+  "confirmProjectName": "my-project"
+}
+```
+
+---
+
+#### Tool: `list_deployments`
+
+列出部署记录，包含状态、来源、当前版本标记和是否可回滚。
+
+**输入参数：**
+
+```json
+{
+  "status": "READY",
+  "query": "landing",
+  "days": 30,
+  "page": 0,
+  "size": 20
+}
+```
+
+---
+
 ### 2.3 配置指南
 
 #### Claude Code
@@ -459,7 +637,7 @@ API Key: ps_live_Wln...（前 12 位）
 
 ## 3. 后端 API 接口（CLI/MCP 调用）
 
-CLI 和 MCP Server 调用的后端 API 与 VS Code 插件完全一致，无需任何改动。
+CLI 和 MCP Server 都通过 API Key 调用 `/v1` 接口。基础部署接口与 VS Code 插件一致；项目管理、访问控制、版本历史和回滚使用新增的 `/v1/projects...` 接口。
 
 ### 3.1 认证
 
@@ -552,6 +730,27 @@ file: (binary zip data)
 }
 ```
 
+### 3.3 项目管理端点
+
+| 端点 | 用途 | CLI/MCP 映射 |
+|------|------|--------------|
+| `GET /v1/deployments` | 部署记录列表 | `deployments list` / `list_deployments` |
+| `GET /v1/projects` | 项目列表 | `projects list` / `list_projects` |
+| `GET /v1/projects/{id}` | 项目详情 | `projects get` / `get_project` |
+| `DELETE /v1/projects/{id}` | 删除项目 | `projects delete` / `delete_project` |
+| `POST /v1/projects/{id}/redeploy-latest` | 过期链接恢复 | `projects redeploy` / `redeploy_project_latest` |
+| `GET /v1/projects/{id}/access` | 查询访问控制 | `projects access` / `get_project_access` |
+| `PATCH /v1/projects/{id}/access` | 设置公开/密码访问 | `projects access --public/--password` / `set_project_access` |
+| `GET /v1/projects/{id}/versions` | 版本历史 | `projects versions` / `list_project_versions` |
+| `POST /v1/projects/{id}/versions/{deploymentId}/rollback` | 回滚 fixed URL latest 指针 | `projects rollback` / `rollback_project_version` |
+
+破坏性或高影响操作的确认策略：
+
+- 删除项目：CLI 使用 `--confirm <project-name>`，MCP 使用 `confirmProjectName`。
+- 回滚版本：同样需要项目名确认。
+- 设置 `PUBLIC`：允许把密码项目切回公开，并清除已有密码。
+- 设置 `PASSWORD`：Pro 能力，MCP 要求显式提供密码。
+
 ---
 
 ## 4. Agent 集成最佳实践
@@ -574,6 +773,8 @@ previewship deploy ./dist --json --name my-project
 2. 检查退出码判断成败（0=成功，非0=失败）
 3. 部署前建议先运行构建命令（如 `npm run build`）
 4. 优先部署构建产物目录（`./dist`、`./build`）而非整个项目
+5. 删除项目和回滚版本前先读取项目详情，并要求用户确认项目名
+6. 如果用户要求把密码项目改回公开，调用 `projects access <id> --public` 或 MCP `set_project_access` + `visibility=PUBLIC`
 
 ### 4.2 MCP 最佳 Tool 描述
 
@@ -581,6 +782,12 @@ Tool 描述对 Agent 的调用决策至关重要。`deploy_preview` 的描述应
 - **触发关键词**：部署、预览、分享、链接、deploy、preview、share
 - **适用场景**：静态网站、HTML、React/Vue 构建产物
 - **操作结果**：返回可公开访问的预览链接
+
+项目管理类 Tool 描述应包含：
+- **安全边界**：删除和回滚需要项目名确认
+- **访问模式**：只支持 PUBLIC 和 PASSWORD；PUBLIC 会清除已有密码
+- **固定链接模型**：回滚和重新部署围绕项目固定 URL 与 latest 指针工作
+- **适用场景**：Free 项目满额时删除不用项目、过期链接恢复、客户 review 链接加密码
 
 ### 4.3 User-Agent 标识
 
@@ -729,7 +936,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 # 6. 使用 MCP Inspector 测试（可选）
 npx @modelcontextprotocol/inspector node dist/index.js
 # 在 Inspector UI 中：
-# - 查看 Tools 列表（应有 deploy_preview、check_deployment、show_usage）
+# - 查看 Tools 列表（应有 deploy_preview、check_deployment、show_usage、list_projects、set_project_access 等）
 # - 手动调用 show_usage 验证返回格式
 # - 手动调用 deploy_preview 测试部署
 ```
@@ -749,8 +956,11 @@ npx @modelcontextprotocol/inspector node dist/index.js
 | 9 | 查询状态 | `previewship status <id>` | 显示部署详情 |
 | 10 | 无效 Key | `PREVIEWSHIP_API_KEY=bad previewship usage` | 错误提示 |
 | 11 | 空目录 | `previewship deploy /tmp/empty-dir` | 错误：无可部署文件 |
-| 12 | MCP 启动 | MCP Inspector 连接 | 列出 3 个 Tool |
+| 12 | MCP 启动 | MCP Inspector 连接 | 列出部署、用量、项目、访问控制、版本历史相关 Tool |
 | 13 | MCP 部署 | Claude Code 中说 "deploy preview" | 返回预览链接 |
+| 14 | CLI 项目列表 | `previewship projects list --json` | 返回项目数组 |
+| 15 | CLI 切回公开 | `previewship projects access <id> --public --json` | 返回 `visibility=PUBLIC` 且 `passwordProtected=false` |
+| 16 | MCP 删除保护 | `delete_project` 缺少正确 `confirmProjectName` | 拒绝删除 |
 
 ---
 

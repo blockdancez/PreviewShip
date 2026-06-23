@@ -1,10 +1,22 @@
 # PreviewShip MCP Server
 
-> Let AI coding agents publish HTML/Markdown online, upload files, and deploy static previews through MCP.
+> Let AI coding agents deploy React/Vue/Vite/Next build output, HTML files, and Markdown documents through MCP and return fixed PreviewShip preview URLs.
 
-PreviewShip MCP gives Claude Code, Cursor, Windsurf, and any MCP-compatible client a native way to upload an HTML or Markdown file to a website, host HTML/Markdown online, deploy AI-generated pages, or publish a static build output folder as a shareable URL.
+PreviewShip MCP gives Claude Code, Cursor, Windsurf, Codex-compatible workflows, and any MCP-compatible client a native way to publish browser-ready frontend artifacts. Agents can deploy a React/Vue/Vite/Next static build, upload an HTML file, publish Markdown, share AI-generated HTML, or return a QA/client review link without asking the user to open a hosting dashboard.
 
-For a no-signup browser trial, use <https://previewship.com/try> to publish a one-hour temporary HTML/Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
+For a no-signup browser trial, use <https://previewship.com/try> to publish a one-hour temporary frontend build, HTML, or Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
+
+## What This MCP Server Does
+
+| Job | PreviewShip MCP behavior |
+|-----|--------------------------|
+| Deploy frontend build output | Uploads `dist`, `build`, `out`, `public`, or another static folder with `index.html` |
+| Publish one HTML file | Packages `.html` as the preview entry page |
+| Publish Markdown | Renders `.md` / `.markdown` through a generated viewer page |
+| Support AI agent workflows | Returns deployment status and PreviewShip URL through structured tool output |
+| Keep review links stable | Uses fixed project preview URLs that point to the latest deployment |
+
+PreviewShip hosts static output. It does not run `npm install`, install dependencies, or build raw source folders after upload. For React, Vue, Vite, Next, Astro, Svelte, Angular, or Nuxt projects, ask the agent to run the build first and deploy the generated static output.
 
 ## Setup
 
@@ -72,24 +84,36 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ### `deploy_preview`
 
-Deploy a static website, single HTML file, or Markdown document to a preview environment.
+Deploy a static website build output, single HTML file, or Markdown document to a PreviewShip preview environment.
 
 **Parameters:**
 - `path` (optional) — Directory, single `.html` file, or Markdown file to deploy. Defaults to current working directory.
 - `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting slug.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
 
-**Important:** when `path` is a directory, it should be a static build artifact such as `dist`, `build`, `out`, or another folder containing `index.html` and browser assets. Ask the agent to run the framework build first. Do not deploy a raw source-code zip/folder with `package.json`, `src/`, and `node_modules` unless it is already static output.
+**Important:** when `path` is a directory, it should be a static build artifact such as `dist`, `build`, `out`, `public`, or another folder containing `index.html` and browser assets. Ask the agent to run the framework build first. Do not deploy a raw source-code zip/folder with `package.json`, `src/`, and `node_modules` unless it is already static output.
 
 **Example usage in conversation:**
 > "Deploy this project to a preview"
 > "Deploy the dist folder"
+> "Build the React app, then deploy the generated dist folder"
+> "Build the Vue/Vite app and deploy the browser-ready output"
 > "Deploy report.html and share the preview link"
 > "Deploy README.md and share the preview link"
 > "Publish this ChatGPT HTML as a website URL"
 > "Host page.html online and return the URL"
-> "Build the app, then deploy the generated dist folder"
 > "Help me deploy and share a preview link"
+
+## Supported Inputs
+
+| Input | Supported | Agent instruction |
+|------|-----------|-------------------|
+| React/Vue/Vite/Svelte/Astro build output | Yes | Run build, then call `deploy_preview` on `dist`/`build`/`out`/`public` |
+| Next.js static export | Yes | Deploy the exported static folder |
+| Single `.html` file | Yes | Call `deploy_preview` with the file path |
+| Markdown `.md` / `.markdown` file | Yes | Call `deploy_preview` with the file path |
+| Raw source folder with `package.json` and `src/` | No | Build first and deploy the output |
+| `node_modules` | No | Do not upload dependency folders |
 
 ## HTML Publishing Guides
 
@@ -115,6 +139,42 @@ Check deployment status.
 
 Show remaining deployment quota.
 
+### `list_projects`
+
+List PreviewShip projects owned by the API key user, including fixed preview URLs, access mode, current status, and redeploy availability.
+
+### `get_project`
+
+Get one project by `projectId`.
+
+### `delete_project`
+
+Delete a project, its fixed preview URL, hosted project, and Showcase entry. This tool requires `confirmProjectName` to exactly match the project name before deletion.
+
+### `redeploy_project_latest`
+
+Redeploy a project from its latest retained artifact without uploading files again. Useful for restoring an expired fixed preview link.
+
+### `get_project_access`
+
+Show whether a project is public or password protected.
+
+### `set_project_access`
+
+Set project access to `PUBLIC` or `PASSWORD`. `PUBLIC` clears an existing project password and makes the fixed preview URL publicly accessible again. `PASSWORD` requires a password and is a Pro capability.
+
+### `list_project_versions`
+
+List retained project versions that can be used for rollback. Free accounts show fewer retained versions; Pro accounts keep more history.
+
+### `rollback_project_version`
+
+Roll back a fixed project URL to a retained historical deployment. This tool requires `confirmProjectName` to exactly match the project name before rollback.
+
+### `list_deployments`
+
+List deployment history with status, preview URL, source, current marker, and rollback availability.
+
 ## Directory Listings
 
 Use this metadata when submitting to Glama, Smithery, mcp.so, or other MCP directories:
@@ -122,19 +182,48 @@ Use this metadata when submitting to Glama, Smithery, mcp.so, or other MCP direc
 - **Name:** PreviewShip MCP
 - **Command:** `npx -y previewship-mcp`
 - **Category:** Deployment / static preview hosting / developer tools
-- **Short description:** Deploy browser-ready HTML, Markdown, and static build artifacts from AI coding agents and return fixed PreviewShip preview URLs.
-- **Tools:** `deploy_preview`, `check_deployment`, `show_usage`
-- **Best keywords:** MCP static hosting, HTML to link, Markdown to website, AI-generated HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview.
+- **Short description:** MCP server for deploying React/Vue/Vite/Next build output, HTML, Markdown, and AI-generated static pages from coding agents to fixed PreviewShip preview URLs.
+- **Tools:** `deploy_preview`, `check_deployment`, `show_usage`, `list_projects`, `get_project`, `delete_project`, `redeploy_project_latest`, `get_project_access`, `set_project_access`, `list_project_versions`, `rollback_project_version`, `list_deployments`
+- **Best keywords:** MCP static hosting, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, Cursor MCP deploy, password protected preview, rollback static preview, fixed preview URL.
 - **Required env:** `PREVIEWSHIP_API_KEY`
+
+## FAQ
+
+### Can the MCP server deploy a React, Vue, Vite, or Next.js app?
+
+Yes, after the app is built. The agent should run the framework build command first, then call `deploy_preview` on the generated `dist`, `build`, `out`, `public`, or static export folder.
+
+### Can the MCP server publish Claude or ChatGPT HTML artifacts?
+
+Yes. Save the generated HTML as a `.html` file or write it into a project folder with `index.html`, then call `deploy_preview`.
+
+### Does PreviewShip MCP build source code?
+
+No. It deploys browser-ready static output. It does not run `npm install` or build source-code zips after upload.
+
+### Does it return a stable URL?
+
+Yes. PreviewShip projects use fixed preview URLs. New deployments update the latest pointer behind the same project link.
+
+### Can an agent switch a password-protected project back to public?
+
+Yes. Use `set_project_access` with `visibility: "PUBLIC"`. PreviewShip clears the stored password and makes the fixed preview URL publicly accessible again.
+
+### Can an agent delete old projects when the Free project limit is full?
+
+Yes. Use `list_projects` to inspect projects, then `delete_project` with the exact `confirmProjectName`. Deleting removes the fixed preview URL, hosted project, deployment association, and Showcase entry.
 
 ## Plans
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
 | Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
-| Daily Deploys | 5 | 30 | 40 |
-| Monthly Deploys | 20 | 200 | 350 |
+| Daily Deploys | 5 | 50 | 80 |
+| Monthly Deploys | 20 | 300 | 500 |
 | Preview Expiry | 3 days | 30 days | 365 days |
+| Version History | 3 retained versions | 10 retained versions | 40 retained versions |
+| Project Password Access | Not included | Included | Included |
+| Public/Password Access Toggle | Public only | Included | Included |
 | PreviewShip Watermark | Included | Removed | Removed |
 
 [View plans](https://previewship.com/billing)

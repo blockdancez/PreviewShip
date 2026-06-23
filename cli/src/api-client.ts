@@ -1,4 +1,16 @@
-import type { CreateDeploymentResponse, DeploymentDetail, UsageResponse } from './types.js';
+import type {
+  CreateDeploymentResponse,
+  DeploymentDetail,
+  DeploymentListResponse,
+  ProjectAccessResponse,
+  ProjectAccessUpdate,
+  ProjectItem,
+  ProjectVersionsResponse,
+  ProjectsResponse,
+  RedeployLatestResponse,
+  RollbackProjectVersionResponse,
+  UsageResponse,
+} from './types.js';
 import { ApiError } from './types.js';
 
 /** 默认请求超时 */
@@ -44,6 +56,104 @@ export class ApiClient {
     return this.handleResponse<DeploymentDetail>(resp);
   }
 
+  /** GET /v1/deployments — 查询部署记录 */
+  async listDeployments(params: {
+    page?: number;
+    size?: number;
+    status?: string;
+    query?: string;
+    days?: number;
+  } = {}): Promise<DeploymentListResponse> {
+    const url = this.withQuery('/v1/deployments', {
+      page: params.page,
+      size: params.size,
+      status: params.status,
+      q: params.query,
+      days: params.days,
+    });
+    const resp = await this.fetchWithTimeout(url, {
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<DeploymentListResponse>(resp);
+  }
+
+  /** GET /v1/projects — 查询项目列表 */
+  async listProjects(): Promise<ProjectsResponse> {
+    const url = `${this.serverUrl}/v1/projects`;
+    const resp = await this.fetchWithTimeout(url, {
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<ProjectsResponse>(resp);
+  }
+
+  /** GET /v1/projects/{id} — 查询项目详情 */
+  async getProject(id: number): Promise<ProjectItem> {
+    const url = `${this.serverUrl}/v1/projects/${id}`;
+    const resp = await this.fetchWithTimeout(url, {
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<ProjectItem>(resp);
+  }
+
+  /** DELETE /v1/projects/{id} — 删除项目 */
+  async deleteProject(id: number): Promise<void> {
+    const url = `${this.serverUrl}/v1/projects/${id}`;
+    const resp = await this.fetchWithTimeout(url, {
+      method: 'DELETE',
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<void>(resp);
+  }
+
+  /** POST /v1/projects/{id}/redeploy-latest — 用最新 retained artifact 重新部署 */
+  async redeployProject(id: number): Promise<RedeployLatestResponse> {
+    const url = `${this.serverUrl}/v1/projects/${id}/redeploy-latest`;
+    const resp = await this.fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { ...this.authHeaders() },
+    }, UPLOAD_TIMEOUT_MS);
+    return this.handleResponse<RedeployLatestResponse>(resp);
+  }
+
+  /** GET /v1/projects/{id}/access — 查询访问控制 */
+  async getProjectAccess(id: number): Promise<ProjectAccessResponse> {
+    const url = `${this.serverUrl}/v1/projects/${id}/access`;
+    const resp = await this.fetchWithTimeout(url, {
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<ProjectAccessResponse>(resp);
+  }
+
+  /** PATCH /v1/projects/{id}/access — 设置公开或密码访问 */
+  async updateProjectAccess(id: number, body: ProjectAccessUpdate): Promise<ProjectAccessResponse> {
+    const url = `${this.serverUrl}/v1/projects/${id}/access`;
+    const resp = await this.fetchWithTimeout(url, {
+      method: 'PATCH',
+      headers: { ...this.authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse<ProjectAccessResponse>(resp);
+  }
+
+  /** GET /v1/projects/{id}/versions — 查询版本历史 */
+  async listProjectVersions(id: number): Promise<ProjectVersionsResponse> {
+    const url = `${this.serverUrl}/v1/projects/${id}/versions`;
+    const resp = await this.fetchWithTimeout(url, {
+      headers: { ...this.authHeaders() },
+    });
+    return this.handleResponse<ProjectVersionsResponse>(resp);
+  }
+
+  /** POST /v1/projects/{id}/versions/{deploymentId}/rollback — 回滚版本 */
+  async rollbackProjectVersion(id: number, deploymentId: number): Promise<RollbackProjectVersionResponse> {
+    const url = `${this.serverUrl}/v1/projects/${id}/versions/${deploymentId}/rollback`;
+    const resp = await this.fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { ...this.authHeaders() },
+    }, UPLOAD_TIMEOUT_MS);
+    return this.handleResponse<RollbackProjectVersionResponse>(resp);
+  }
+
   /** GET /v1/usage — 查询用量 */
   async getUsage(): Promise<UsageResponse> {
     const url = `${this.serverUrl}/v1/usage`;
@@ -58,6 +168,16 @@ export class ApiClient {
       'X-API-Key': this.apiKey,
       'User-Agent': `previewship-cli/${PKG_VERSION}`,
     };
+  }
+
+  private withQuery(path: string, params: Record<string, string | number | undefined>): string {
+    const url = new URL(path, this.serverUrl);
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return url.toString();
   }
 
   /** 带超时的 fetch */
@@ -79,7 +199,11 @@ export class ApiClient {
   /** 统一处理响应 */
   private async handleResponse<T>(resp: Response): Promise<T> {
     if (resp.ok) {
-      return (await resp.json()) as T;
+      if (resp.status === 204) {
+        return undefined as T;
+      }
+      const text = await resp.text();
+      return (text ? JSON.parse(text) : undefined) as T;
     }
 
     const text = await resp.text();

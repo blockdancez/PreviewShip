@@ -1,8 +1,22 @@
 import * as path from 'node:path';
 import * as readline from 'node:readline';
-import { deploy, getStatus, getUsage } from './deployer.js';
+import {
+  deploy,
+  getStatus,
+  getUsage,
+  listDeployments,
+  listProjects,
+  getProject,
+  deleteProject,
+  redeployProject,
+  getProjectAccess,
+  updateProjectAccess,
+  listProjectVersions,
+  rollbackProjectVersion,
+} from './deployer.js';
 import { saveConfig, loadConfig, getApiKey, getConfigPath } from './config.js';
 import { ApiError } from './types.js';
+import type { DeploymentListItem, ProjectAccessResponse, ProjectItem, ProjectVersion } from './types.js';
 import { formatApiError, formatErrorJson } from './errors.js';
 
 // 退出码
@@ -242,6 +256,141 @@ async function cmdUsage(args: string[]): Promise<number> {
   }
 }
 
+/** projects 命令组 */
+async function cmdProjects(args: string[]): Promise<number> {
+  const json = isJsonMode(args);
+  const subcommand = args[0] || 'list';
+  const subArgs = args.slice(1);
+
+  try {
+    switch (subcommand) {
+      case 'list':
+      case 'ls': {
+        const result = await listProjects();
+        if (json) {
+          console.log(JSON.stringify({ success: true, ...result }, null, 2));
+        } else {
+          printProjects(result.projects);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'get': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects get <project-id>');
+        const project = await getProject(projectId);
+        if (json) {
+          console.log(JSON.stringify({ success: true, project }, null, 2));
+        } else {
+          printProject(project);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'delete':
+      case 'rm': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects delete <project-id> --confirm <project-name>');
+        const project = await getProject(projectId);
+        await confirmProjectName(project, subArgs, 'delete');
+        await deleteProject(projectId);
+        if (json) {
+          console.log(JSON.stringify({ success: true, deleted: true, projectId }, null, 2));
+        } else {
+          console.log(c.green('✓') + ` Deleted project ${project.name} (#${project.id}).`);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'redeploy': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects redeploy <project-id>');
+        const result = await redeployProject(projectId);
+        if (json) {
+          console.log(JSON.stringify({ success: true, ...result }, null, 2));
+        } else {
+          console.log(c.green('✓') + ` Redeploy started: #${result.deploymentId}`);
+          console.log(`Status: ${formatStatus(result.status)}`);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'access': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects access <project-id> [--public | --password <password>]');
+        const access = await updateOrShowProjectAccess(projectId, subArgs);
+        if (json) {
+          console.log(JSON.stringify({ success: true, access }, null, 2));
+        } else {
+          printAccess(access);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'versions': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects versions <project-id>');
+        const result = await listProjectVersions(projectId);
+        if (json) {
+          console.log(JSON.stringify({ success: true, ...result }, null, 2));
+        } else {
+          console.log(`Project #${result.projectId} versions (limit ${result.limit})`);
+          printVersions(result.versions);
+        }
+        return EXIT_SUCCESS;
+      }
+      case 'rollback': {
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects rollback <project-id> <deployment-id> --confirm <project-name>');
+        const deploymentId = requiredNumber(subArgs[1], 'Usage: previewship projects rollback <project-id> <deployment-id> --confirm <project-name>');
+        const project = await getProject(projectId);
+        await confirmProjectName(project, subArgs, 'rollback');
+        const result = await rollbackProjectVersion(projectId, deploymentId);
+        if (json) {
+          console.log(JSON.stringify({ success: true, ...result }, null, 2));
+        } else if (result.rolledBack) {
+          console.log(c.green('✓') + ` Rolled back ${project.name} to deployment #${deploymentId}.`);
+          if (result.previewUrl) {
+            console.log(`Preview URL: ${c.cyan(result.previewUrl)}`);
+          }
+        } else {
+          console.log(c.dim(`Deployment #${deploymentId} is already current.`));
+        }
+        return EXIT_SUCCESS;
+      }
+      default:
+        throw new Error(`Unknown projects command: ${subcommand}`);
+    }
+  } catch (err) {
+    return printCommandError(err, json);
+  }
+}
+
+/** deployments 命令组 */
+async function cmdDeployments(args: string[]): Promise<number> {
+  const json = isJsonMode(args);
+  const firstArg = args[0];
+  const hasSubcommand = firstArg === 'list' || firstArg === 'ls';
+  const subcommand = hasSubcommand ? args[0] : 'list';
+  const subArgs = hasSubcommand ? args.slice(1) : args;
+
+  if (firstArg && !hasSubcommand && !firstArg.startsWith('-')) {
+    if (json) {
+      console.log(JSON.stringify({ success: false, error: { code: 'UNKNOWN_COMMAND', message: `Unknown deployments command: ${firstArg}` } }, null, 2));
+    } else {
+      console.error(c.red(`Unknown deployments command: ${firstArg}`));
+    }
+    return EXIT_CONFIG_ERROR;
+  }
+
+  try {
+    const result = await listDeployments({
+      page: optionalNumber(getArgValue(subArgs, '--page')),
+      size: optionalNumber(getArgValue(subArgs, '--size')),
+      status: getArgValue(subArgs, '--status'),
+      query: getArgValue(subArgs, '--query') || getArgValue(subArgs, '-q'),
+      days: optionalNumber(getArgValue(subArgs, '--days')),
+    });
+    if (json) {
+      console.log(JSON.stringify({ success: true, ...result }, null, 2));
+    } else {
+      printDeployments(result.content, result.totalElements);
+    }
+    return EXIT_SUCCESS;
+  } catch (err) {
+    return printCommandError(err, json);
+  }
+}
+
 /** whoami 命令 */
 function cmdWhoami(): number {
   const apiKey = getApiKey();
@@ -268,6 +417,19 @@ ${c.bold('Commands:')}
   login              Set your API Key
   deploy [path]      Deploy a directory, single HTML file, or Markdown file to preview
   status <id>        Check deployment status
+  deployments list   List deployment history
+  projects list      List projects
+  projects get <id>  Show project details
+  projects access <id> [--public | --password <password>]
+                     Show or update project access
+  projects versions <id>
+                     List rollbackable project versions
+  projects rollback <project-id> <deployment-id> --confirm <project-name>
+                     Roll back the fixed project URL to a retained deployment
+  projects redeploy <id>
+                     Redeploy from the latest retained artifact
+  projects delete <id> --confirm <project-name>
+                     Delete a project and its preview URL
   usage              Show quota usage
   whoami             Show current configuration
 
@@ -276,6 +438,18 @@ ${c.bold('Deploy options:')}
   --exclude <glob>   Additional exclude patterns (repeatable)
   --json             Output as JSON
   --no-clipboard     Don't copy URL to clipboard
+
+${c.bold('Project options:')}
+  --public           Set project access to public and clear any existing password
+  --password <pass>  Set project access to password protected
+  --confirm <name>   Confirm destructive actions by project name
+
+${c.bold('Deployment list options:')}
+  --status <status>  ALL, READY, SUPERSEDED, FAILED, EXPIRED, BLOCKED...
+  -q, --query <text> Search by project name or preview URL
+  --days <n>         Only show deployments from the last n days
+  --page <n>         Page number, starting from 0
+  --size <n>         Page size, max 100
 
 ${c.bold('Global options:')}
   --json             JSON output (auto-enabled in CI)
@@ -307,6 +481,25 @@ function getArgValue(args: string[], flag: string): string | undefined {
   return undefined;
 }
 
+/** 可选数值参数 */
+function optionalNumber(value: string | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Invalid number: ${value}`);
+  }
+  return parsed;
+}
+
+/** 必填数值参数 */
+function requiredNumber(value: string | undefined, usage: string): number {
+  const parsed = Number(value);
+  if (!value || !Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(usage);
+  }
+  return parsed;
+}
+
 /** 获取所有 --flag value 形式的值 */
 function getAllArgValues(args: string[], flag: string): string[] {
   const values: string[] = [];
@@ -321,7 +514,11 @@ function getAllArgValues(args: string[], flag: string): string[] {
 
 /** 获取第一个非 flag 参数 */
 function getPositionalArg(args: string[]): string | undefined {
-  const skipNext = new Set(['--name', '-n', '--exclude', '--key', '-k', '--server']);
+  const skipNext = new Set([
+    '--name', '-n', '--exclude', '--key', '-k', '--server',
+    '--status', '--query', '-q', '--days', '--page', '--size',
+    '--confirm', '--password',
+  ]);
   for (let i = 0; i < args.length; i++) {
     if (skipNext.has(args[i])) {
       i++; // 跳过带值的 flag
@@ -341,8 +538,127 @@ function formatStatus(status: string): string {
     case 'FAILED': return c.red('FAILED');
     case 'BUILDING': return c.yellow('BUILDING');
     case 'QUEUED': return c.dim('QUEUED');
+    case 'SUPERSEDED': return c.dim('SUPERSEDED');
+    case 'EXPIRED': return c.yellow('EXPIRED');
+    case 'BLOCKED': return c.red('BLOCKED');
     default: return status;
   }
+}
+
+function printProjects(projects: ProjectItem[]): void {
+  if (projects.length === 0) {
+    console.log(c.dim('No projects yet. Run "previewship deploy ./dist" to create one.'));
+    return;
+  }
+  for (const project of projects) {
+    const access = project.passwordProtected ? 'PASSWORD' : project.projectVisibility;
+    console.log(`#${project.id} ${c.bold(project.name)}  ${formatStatus(project.latestDeploymentStatus || project.urlStatus)}  ${access}`);
+    console.log(`  URL: ${project.previewUrl ? c.cyan(project.previewUrl) : '-'}`);
+    console.log(`  Deployments: ${project.deploymentCount}  Updated: ${formatDate(project.updatedAt)}`);
+  }
+}
+
+function printProject(project: ProjectItem): void {
+  console.log(`#${project.id} ${c.bold(project.name)}`);
+  console.log(`Status: ${formatStatus(project.urlStatus)} / ${project.projectStatus}`);
+  console.log(`Access: ${project.passwordProtected ? 'PASSWORD' : project.projectVisibility}`);
+  console.log(`Preview URL: ${project.previewUrl ? c.cyan(project.previewUrl) : '-'}`);
+  console.log(`Latest deployment: ${project.latestDeploymentId ? `#${project.latestDeploymentId}` : '-'}`);
+  console.log(`Deployments: ${project.deploymentCount}`);
+  console.log(`Can redeploy expired link: ${project.canRedeploy ? 'yes' : 'no'}`);
+  console.log(`Updated: ${formatDate(project.updatedAt)}`);
+}
+
+function printDeployments(deployments: DeploymentListItem[], total: number): void {
+  console.log(`Deployments: ${deployments.length}/${total}`);
+  if (deployments.length === 0) return;
+  for (const deployment of deployments) {
+    const markers = [
+      deployment.current ? 'current' : null,
+      deployment.canRollback ? 'rollbackable' : null,
+    ].filter(Boolean).join(', ');
+    console.log(`#${deployment.deploymentId} ${c.bold(deployment.projectName)}  ${formatStatus(deployment.status)}${markers ? ` (${markers})` : ''}`);
+    console.log(`  URL: ${deployment.previewUrl ? c.cyan(deployment.previewUrl) : '-'}`);
+    console.log(`  Source: ${deployment.deploymentSource}  Created: ${formatDate(deployment.createdAt)}`);
+  }
+}
+
+function printAccess(access: ProjectAccessResponse): void {
+  console.log(`Project #${access.projectId}`);
+  console.log(`Access: ${access.visibility}`);
+  console.log(`Password protected: ${access.passwordProtected ? 'yes' : 'no'}`);
+  if (access.proOnly) {
+    console.log(c.dim('Password access is a Pro feature.'));
+  }
+}
+
+function printVersions(versions: ProjectVersion[]): void {
+  if (versions.length === 0) {
+    console.log(c.dim('No versions found.'));
+    return;
+  }
+  for (const version of versions) {
+    const markers = [
+      version.current ? 'current' : null,
+      version.canRollback ? 'rollbackable' : null,
+      version.retained ? 'retained' : 'artifact removed',
+    ].filter(Boolean).join(', ');
+    console.log(`#${version.deploymentId} ${formatStatus(version.status)} (${markers})`);
+    console.log(`  URL: ${version.previewUrl ? c.cyan(version.previewUrl) : '-'}`);
+    console.log(`  Created: ${formatDate(version.createdAt)}`);
+  }
+}
+
+async function updateOrShowProjectAccess(projectId: number, args: string[]): Promise<ProjectAccessResponse> {
+  if (args.includes('--public')) {
+    return updateProjectAccess(projectId, { visibility: 'PUBLIC' });
+  }
+  if (args.includes('--password')) {
+    let password = getArgValue(args, '--password');
+    if (!password) {
+      if (!process.stdin.isTTY) {
+        throw new Error('Usage: previewship projects access <project-id> --password <password>');
+      }
+      password = await prompt('Project password: ', true);
+    }
+    return updateProjectAccess(projectId, { visibility: 'PASSWORD', password });
+  }
+  return getProjectAccess(projectId);
+}
+
+async function confirmProjectName(project: ProjectItem, args: string[], action: string): Promise<void> {
+  const confirmedName = getArgValue(args, '--confirm');
+  if (confirmedName === project.name) {
+    return;
+  }
+  if (confirmedName) {
+    throw new Error(`Confirmation mismatch. Expected --confirm "${project.name}".`);
+  }
+  if (!process.stdin.isTTY) {
+    throw new Error(`Use --confirm "${project.name}" to ${action} project #${project.id}.`);
+  }
+  const answer = await prompt(`Type project name "${project.name}" to ${action}: `);
+  if (answer !== project.name) {
+    throw new Error('Confirmation mismatch. No changes were made.');
+  }
+}
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().replace('T', ' ').slice(0, 16);
+}
+
+function printCommandError(err: unknown, json: boolean): number {
+  if (json) {
+    console.log(JSON.stringify(formatErrorJson(err), null, 2));
+  } else if (err instanceof ApiError) {
+    console.error(c.red('✗') + ' ' + formatApiError(err));
+  } else {
+    console.error(c.red('✗') + ' ' + (err instanceof Error ? err.message : 'Unknown error'));
+  }
+  return isNetworkError(err) ? EXIT_NETWORK_ERROR : EXIT_BUSINESS_ERROR;
 }
 
 /** 判断是否为网络错误 */
@@ -400,6 +716,12 @@ async function main() {
       break;
     case 'status':
       exitCode = await cmdStatus(args);
+      break;
+    case 'deployments':
+      exitCode = await cmdDeployments(args);
+      break;
+    case 'projects':
+      exitCode = await cmdProjects(args);
       break;
     case 'usage':
       exitCode = await cmdUsage(args);

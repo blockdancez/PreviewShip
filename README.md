@@ -1,8 +1,16 @@
 # PreviewShip
 
-> Publish HTML and Markdown online, deploy AI-generated pages, and share frontend previews from your editor, terminal, AI agent, or browser.
+> Deploy React/Vue/Vite/Next build output, HTML files, and Markdown documents from your editor, terminal, AI agent, or browser and get fixed preview URLs.
 
-PreviewShip is a frontend preview deployment, HTML publishing, and Markdown publishing platform for developers and AI-assisted workflows. Upload an HTML or Markdown file to a website, paste generated HTML, host a single file online, or deploy a static build folder and get a shareable preview URL in seconds — no Git, no CI/CD, no complex configuration.
+PreviewShip is a frontend preview deployment, HTML publishing, and Markdown publishing platform for developers and AI-assisted workflows. Upload browser-ready build output such as `dist`, `build`, `out`, or `public`, publish a single `.html` or Markdown file, paste generated HTML, or let an AI coding agent deploy a static artifact and return a shareable PreviewShip URL in seconds.
+
+PreviewShip is not a source-code build platform. For React, Vue, Vite, Next, Astro, Svelte, Angular, or Nuxt projects, build first and deploy the generated static output folder or zip with `index.html`. Single HTML and Markdown files work directly.
+
+## How To Describe PreviewShip
+
+Use this short description for npm, GitHub, VS Code Marketplace, Open VSX, MCP directories, and AI-agent tool listings:
+
+> PreviewShip deploys browser-ready React/Vue/Vite/Next build output, HTML, Markdown, and AI-generated static pages to fixed preview URLs from CLI, VS Code/Cursor, MCP agents, and browser upload.
 
 ## Open Source Packages
 
@@ -10,23 +18,37 @@ PreviewShip provides four open-source client packages:
 
 | Package | npm | Description |
 |---------|-----|-------------|
-| [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy from the terminal with one command |
-| [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native tool integration for AI coding agents |
-| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy workspace or active HTML/Markdown file from your editor |
+| [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy frontend build output, HTML, or Markdown from the terminal |
+| [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native deploy tool for Claude Code, Cursor, Windsurf, and MCP agents |
+| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy build output or active HTML/Markdown files from your editor |
 | [Agent Skills](#agent-skills) | GitHub / `npx skills` | Installable skills for Codex workflows, including high-fidelity chat sharing |
 
 ## Deployment Methods
 
 | Method | Command / Action | Best For |
 |--------|-----------------|----------|
-| CLI | `npx previewship deploy ./dist`, `./report.html`, or `./README.md` | Terminal, scripts, CI/CD, generated HTML/Markdown |
-| MCP Server | Say "deploy to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf |
-| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, active HTML/Markdown files |
+| CLI | `npx previewship deploy ./dist`, `./report.html`, or `./README.md` | Terminal, scripts, CI/CD, frontend builds, generated HTML/Markdown |
+| MCP Server | Say "build the app, deploy the dist folder to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf, agent workflows |
+| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, build folders, active HTML/Markdown files |
 | Agent Skill | `$share-codex-chat 分享当前 Codex 对话` | Publish a Codex conversation as a shareable high-fidelity chat page |
 | Web Console | Upload zip/html/markdown or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
 
-## HTML Publishing Workflows
+## Supported Inputs
 
+| Input | Supported | Notes |
+|-------|-----------|-------|
+| React/Vue/Vite/Svelte/Astro build output | Yes | Deploy `dist`, `build`, `out`, `public`, or a zip with `index.html` |
+| Next.js static export | Yes | Deploy the exported static folder |
+| Single `.html` file | Yes | Packaged as `index.html` automatically |
+| Markdown `.md` / `.markdown` file | Yes | Published through a generated viewer page |
+| Raw source folder with `package.json`, `src/`, and `node_modules` | No | Run the build first and deploy generated output |
+
+## Publishing Workflows
+
+- [Deploy a React/Vue build output](https://previewship.com/guides/deploy-a-dist-folder)
+- [HTML to link](https://previewship.com/guides/html-to-link)
+- [Markdown to website](https://previewship.com/guides/markdown-to-website)
+- [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
 - [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
 - [HTML file hosting](https://previewship.com/guides/html-file-hosting)
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
@@ -68,6 +90,8 @@ For zipped uploads or directory deploys, deploy the static build artifact, not t
 | `previewship login [--key KEY]` | Set API Key for authentication |
 | `previewship deploy [path] [-n name] [--json]` | Deploy a directory, single HTML file, or Markdown document and get a preview URL |
 | `previewship status <id> [--json]` | Check deployment status by ID |
+| `previewship deployments list [--status READY] [--days 30]` | List deployment history and rollback availability |
+| `previewship projects list|get|delete|redeploy|access|versions|rollback` | Manage projects, public/password access, retained versions, rollback, and expired-link recovery |
 | `previewship usage [--json]` | Show remaining deployment quota |
 | `previewship whoami` | Display current configuration |
 
@@ -100,10 +124,25 @@ Project names are display names inside PreviewShip. They can use natural short n
 The CLI also exports its core functions for use as a library:
 
 ```typescript
-import { deploy, getStatus, getUsage } from 'previewship'
+import {
+  deploy,
+  getStatus,
+  getUsage,
+  listProjects,
+  getProject,
+  deleteProject,
+  getProjectAccess,
+  updateProjectAccess,
+  listProjectVersions,
+  rollbackProjectVersion,
+  redeployProject,
+  listDeployments,
+} from 'previewship'
 import { ApiClient } from 'previewship'
 import { packDirectory, DEFAULT_EXCLUDE_PATTERNS } from 'previewship'
 ```
+
+Use `updateProjectAccess(projectId, { visibility: 'PUBLIC' })` to clear an existing project password and switch the fixed preview URL back to public access.
 
 ---
 
@@ -196,6 +235,12 @@ The skill preserves visible Codex UI elements such as user bubbles, assistant re
 | `deploy_preview` | Deploy a build-output directory, single HTML file, or Markdown document and get a preview URL | `path` (optional), `projectName` (optional), `excludePatterns` (optional) |
 | `check_deployment` | Check deployment status by ID | `deploymentId` (required) |
 | `show_usage` | Show remaining deployment quota | — |
+| `list_projects`, `get_project` | Inspect fixed preview URLs, project status, access mode, and redeploy state | `projectId` for detail |
+| `set_project_access`, `get_project_access` | Set public/password access; `PUBLIC` clears an existing password | `projectId`, `visibility`, `password` for password mode |
+| `list_project_versions`, `rollback_project_version` | List retained versions and roll back a fixed URL to a historical deployment | `projectId`, `deploymentId`, `confirmProjectName` |
+| `redeploy_project_latest` | Restore an expired fixed preview link from the latest retained artifact | `projectId` |
+| `delete_project` | Delete a project and its fixed preview URL; requires exact project-name confirmation | `projectId`, `confirmProjectName` |
+| `list_deployments` | List deployment history, sources, current marker, and rollback availability | `status`, `query`, `days`, `page`, `size` |
 
 ### Usage
 
@@ -264,6 +309,9 @@ cursor --install-extension previewship-0.1.8.vsix
 | **Monthly Deploys** | 20 | 300 | 500 |
 | **Max Zip Size** | 15 MB | 50 MB | 80 MB |
 | **Preview Expiry** | 3 days | 30 days | 365 days |
+| **Version History** | 3 retained versions | 10 retained versions | 40 retained versions |
+| **Project Password Access** | Not included | Included | Included |
+| **Public/Password Access Toggle** | Public only | Included | Included |
 | **PreviewShip Watermark** | Included | Removed | Removed |
 
 Free plan requires no credit card. Start deploying instantly.

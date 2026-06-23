@@ -1,14 +1,23 @@
 # PreviewShip
 
-> 部署预览，即时分享。从编辑器、终端、AI 智能体或浏览器——一步拿链接。
+> 从编辑器、终端、AI 智能体或浏览器部署 React/Vue/Vite/Next 构建产物、HTML 文件和 Markdown 文档，并获得固定预览链接。
 
-PreviewShip 是面向开发者的前端预览部署与分享平台。支持 **VS Code/Cursor 扩展**、**CLI**、**MCP Server（AI 智能体原生集成）** 和**网页控制台**四种部署方式，后端自动部署到 Vercel 并返回可访问的预览 URL。
+PreviewShip 是面向开发者和 AI 辅助开发工作流的前端预览部署平台。你可以上传 `dist`、`build`、`out`、`public` 等浏览器可直接打开的构建产物，发布单个 `.html` 或 Markdown 文件，粘贴 AI 生成的 HTML，或让 AI 编程智能体部署静态产物并返回可分享的 PreviewShip URL。
+
+PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelte、Angular、Nuxt 等项目需要先 build，再部署包含 `index.html` 的静态输出目录或 zip；单个 HTML 和 Markdown 文件可以直接发布。
+
+## 如何描述 PreviewShip
+
+用于 npm、GitHub、VS Code Marketplace、Open VSX、MCP 目录和 AI 工具目录时，可以使用这句：
+
+> PreviewShip 可以通过 CLI、VS Code/Cursor、MCP 智能体和浏览器上传，把 React/Vue/Vite/Next 构建产物、HTML、Markdown 和 AI 生成静态页面部署成固定预览链接。
 
 ## 核心能力
 
 - **VS Code / Cursor 扩展**：一键打包 workspace → 上传 → 部署 → 拿到预览链接
 - **CLI**（`npx previewship deploy`）：终端一行命令部署，`--json` 输出适配 AI 智能体和 CI 管道
 - **MCP Server**（`previewship-mcp`）：让 Claude Code、Cursor、Windsurf 等 AI 编程智能体通过 MCP 协议原生调用部署
+- **CLI/MCP 项目管理**：支持项目列表、删除项目、公开/密码访问切换、版本历史、回滚、过期链接重新部署和部署记录查询
 - **Agent Skills**（`npx skills add ...`）：让 Codex 安装 `share-codex-chat` 后直接把当前会话导出成高保真 HTML 并部署分享
 - **Web 控制台**：拖拽上传 zip 部署、管理 API Keys、查看用量与部署历史、订阅 Pro
 - **后端 API**：鉴权、配额控制（日/月）、并发限制、Stripe 订阅同步
@@ -18,11 +27,21 @@ PreviewShip 是面向开发者的前端预览部署与分享平台。支持 **VS
 
 | 方式 | 命令 / 操作 | 适用场景 |
 |------|------------|---------|
-| VS Code / Cursor 扩展 | 命令面板 → `PreviewShip: Deploy` | 编辑器内一键部署 |
-| CLI | `npx previewship deploy ./dist` | 终端、脚本、CI/CD |
-| MCP Server | AI 对话中说"部署到 PreviewShip" | Claude Code / Cursor / Windsurf |
+| VS Code / Cursor 扩展 | 命令面板 → `PreviewShip: Deploy` | 编辑器内一键部署构建目录或 HTML/Markdown |
+| CLI | `npx previewship deploy ./dist` | 终端、脚本、CI/CD、前端构建产物 |
+| MCP Server | AI 对话中说“先构建，再把 dist 部署到 PreviewShip” | Claude Code / Cursor / Windsurf |
 | Agent Skill | `$share-codex-chat 分享当前 Codex 对话` | 将 Codex 会话发布成可分享的高保真聊天页 |
 | 控制台上传 | 拖拽 zip 到网页 | 零工具依赖 |
+
+## 支持的输入
+
+| 输入 | 是否支持 | 说明 |
+|------|----------|------|
+| React/Vue/Vite/Svelte/Astro 构建产物 | 支持 | 部署 `dist`、`build`、`out`、`public` 或包含 `index.html` 的 zip |
+| Next.js 静态导出 | 支持 | 部署导出的静态目录 |
+| 单个 `.html` 文件 | 支持 | 自动作为 `index.html` 发布 |
+| Markdown `.md` / `.markdown` 文件 | 支持 | 通过生成的 Markdown viewer 发布 |
+| 包含 `package.json`、`src/`、`node_modules` 的源码目录 | 不支持 | 请先 build，再部署生成的静态产物 |
 
 ## 套餐
 
@@ -37,7 +56,9 @@ PreviewShip 是面向开发者的前端预览部署与分享平台。支持 **VS
 | 月度上传总量 | 200 MB | 2 GB | 4 GB |
 | 预览过期 | 3 天 | 30 天 | 365 天 |
 | PreviewShip 水印 | 显示 | 移除 | 移除 |
-| 每项目保留部署 | 5 | 10 | 40 |
+| 每项目保留部署 | 3 | 10 | 40 |
+| 项目密码访问 | 不支持 | 支持 | 支持 |
+| 公开/密码访问切换 | 仅公开 | 支持 | 支持 |
 | 部署历史可见 | 7 天 | 7 天 | 7 天 |
 | 构建日志可见 | 7 天 | 30 天 | 180 天 |
 | API Key | 1 个 | 1 个 | 1 个 |
