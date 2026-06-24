@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import html
 import io
 import json
@@ -79,11 +80,22 @@ def is_progress_message(content: str) -> bool:
     return "现在我" in stripped[:80] and ("检查" in stripped[:120] or "部署" in stripped[:120])
 
 
-def slugify(value: str, fallback: str = "codex-chat-share") -> str:
+def slugify(value: str, fallback: str = "codex-chat-share", max_length: int = 64) -> str:
     normalized = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", normalized).strip("-").lower()
     slug = re.sub(r"-{2,}", "-", slug)
-    return slug[:64].strip("-") or fallback
+    return slug[:max_length].strip("-") or fallback
+
+
+def stable_share_project_name(title: str, identity: str = "") -> str:
+    base_title = title.strip()
+    base = TITLE_SLUG_OVERRIDES.get(base_title) or slugify(base_title, fallback="codex-chat-share")
+    if not identity:
+        return base
+    suffix = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:8]
+    max_base_length = 64 - len(suffix) - 1
+    base = slugify(base, fallback="codex-chat-share", max_length=max_base_length)
+    return f"{base}-{suffix}"
 
 
 def project_name_from_data(data: dict[str, Any]) -> str:
@@ -91,16 +103,13 @@ def project_name_from_data(data: dict[str, Any]) -> str:
         value = str(data.get(key) or "").strip()
         if value:
             return slugify(value)
+    identity = str(data.get("threadId") or data.get("thread_id") or data.get("sourcePath") or "").strip()
     for key in ("titleEn", "title_en"):
         value = str(data.get(key) or "").strip()
         if value:
-            slug = slugify(value, fallback="")
-            if slug:
-                return slug
+            return stable_share_project_name(value, identity)
     title = str(data.get("title") or "").strip()
-    if title in TITLE_SLUG_OVERRIDES:
-        return TITLE_SLUG_OVERRIDES[title]
-    return slugify(title)
+    return stable_share_project_name(title, identity)
 
 
 def load_transcript_data(input_path: Path) -> dict[str, Any]:
@@ -253,11 +262,35 @@ def codex_jsonl_to_data(raw: str, input_path: Path) -> dict[str, Any]:
     flush_orphan_details()
     if not messages:
         raise ValueError("JSONL 中没有可渲染的 Codex 消息")
+    source_path = input_path.expanduser().resolve()
+    session_title, thread_id = session_metadata(source_path)
+    title = session_title or "Codex Chat Share"
     return {
-        "title": title_from_session_index(input_path) or "Codex Chat Share",
-        "titleEn": title_from_session_index(input_path) or "Codex Chat Share",
+        "title": title,
+        "titleEn": title,
+        "threadId": thread_id,
+        "sourcePath": str(source_path),
         "messages": messages,
     }
+
+
+def session_metadata(input_path: Path) -> tuple[str, str]:
+    db = Path.home() / ".codex" / "state_5.sqlite"
+    if db.exists():
+        try:
+            con = sqlite3.connect(str(db), timeout=2.0)
+            try:
+                row = con.execute(
+                    "SELECT title, id FROM threads WHERE rollout_path=? LIMIT 1",
+                    (str(input_path),),
+                ).fetchone()
+            finally:
+                con.close()
+            if row:
+                return str(row[0] or "").strip(), str(row[1] or "").strip()
+        except Exception:
+            pass
+    return title_from_session_index(input_path), ""
 
 
 def title_from_session_index(input_path: Path) -> str:

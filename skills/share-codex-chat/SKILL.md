@@ -2,7 +2,6 @@
 name: share-codex-chat
 description: Export the current Codex desktop conversation into a self-contained, high-fidelity HTML page that reproduces the visible Codex chat, then deploy it with the PreviewShip CLI to get a public share link. Use when the user wants to share a Codex conversation, publish chat history, generate a chat HTML page, or deploy the transcript to PreviewShip. 中文触发词：分享当前对话、导出 Codex 对话、生成聊天 HTML、部署聊天记录。
 license: MIT
-compatibility: Requires Python 3 (renderer) and Node.js >=18 (Codex's own marked.esm.js for markdown parity, and the PreviewShip CLI). Fully offline and local — reads the session transcript from ~/.codex and never launches, attaches to, or controls Codex.
 metadata:
   author: PreviewShip
   version: "2.0"
@@ -12,6 +11,10 @@ metadata:
 ---
 
 # Share Codex Chat
+
+## Requirements
+
+Requires Python 3 for the renderer and Node.js >=18 for Codex's `marked.esm.js` Markdown parity plus the PreviewShip CLI. The workflow is fully offline and local before deploy: it reads the session transcript from `~/.codex` and never launches, attaches to, or controls Codex.
 
 ## When to use this skill
 
@@ -33,6 +36,15 @@ It is **fully offline and local**. It does **NOT** launch Codex, attach a debugg
 
 ### Privacy (hard rules)
 Render only what is visible in the chat. **Never** include hidden system/developer messages, chain-of-thought/reasoning, raw tool calls or tool output, `AGENTS.md` instructions, `<environment_context>`, full `<skill>...</skill>` payloads, API keys, env vars, or secrets — unless the user explicitly pasted that content as a visible chat message and asked to include it. The renderer already filters these; do not defeat it. Redact secret-looking values (e.g. `ps_live_...`).
+
+### Deployment identity safety (hard rules)
+PreviewShip project names are deployment identities. Treat deploying with an existing project name as an overwrite/update, not as a harmless retry.
+
+- Use the renderer-generated project name by default. It includes a stable suffix for the current Codex conversation, so repeated deployments from the same conversation update the same project while different conversations do not collide.
+- Do not change `-n` to another existing project name after a failed deploy. Never list/search account projects to find a reusable name as a workaround.
+- If PreviewShip reports a project count limit, quota limit, plan/subscription limit, permission limit, billing requirement, or upgrade requirement, stop immediately. Tell the user the deploy could not create a new project because of their PreviewShip plan, and ask them to upgrade/delete projects or explicitly provide a project name to update.
+- Only deploy to a user-provided existing project name when the user explicitly supplied that exact project name in the current request, or when this same Codex conversation is being redeployed with the same renderer-generated project name.
+- If the user explicitly asks to use an existing project name, mention that this will replace/update that PreviewShip project's content before returning the result.
 
 ## Workflow
 
@@ -94,12 +106,14 @@ Re-run `whoami` after they confirm. Do not guess credentials. Node.js 20+ is req
 
 ### 5. Choose a deployment name
 
-Default `-n` to the conversation title translated to a concise hyphenated English slug. You can read the title from the renderer:
+Default `-n` to the renderer-generated name. It is based on the conversation title plus a stable current-conversation suffix. Use it exactly; do not remove the suffix or replace it with another account project name.
 
 ```bash
 PROJECT_NAME="$(python3 "$SKILL_DIR/scripts/render_chat_html.py" --current --print-project-name)"
 ```
-Examples: `创建聊天记录分享技能` → `create-chat-record-sharing-skill`; `分享当前 Codex 对话` → `share-current-codex-chat`. Avoid the fixed name `codex-chat-share` unless the title is unavailable.
+Examples: `创建聊天记录分享技能` → `create-chat-record-sharing-skill-a1b2c3d4`; `分享当前 Codex 对话` → `share-current-codex-chat-a1b2c3d4`. Avoid the fixed name `codex-chat-share` unless the title and session identity are unavailable.
+
+Override `PROJECT_NAME` only when the user explicitly provided a project name in the current request.
 
 ### 6. Deploy and return the URL
 
@@ -108,6 +122,8 @@ previewship deploy /tmp/codex-chat-share/index.html -n "$PROJECT_NAME" --json
 # or: npx -y previewship deploy /tmp/codex-chat-share/index.html -n "$PROJECT_NAME" --json
 ```
 Parse the JSON and return the public `previewUrl`. If JSON parsing fails, extract the URL from the CLI output only when unambiguous.
+
+If the deploy fails with quota/plan/subscription/project-count/billing/permission language, stop and report the exact error summary. Do not retry by changing `PROJECT_NAME` to an existing project.
 
 ## Required output
 
@@ -150,7 +166,7 @@ Only include `duration`/`timestamp`/`attachments`/`details`/`artifacts`/`changes
 ## Error handling
 
 - Transcript incomplete (compaction): render what's visible and label the limitation in the final response.
-- PreviewShip quota/permission error: show the exact error summary and stop.
+- PreviewShip quota/permission/plan/project-count error: show the exact error summary and stop. Do not rename the deploy to an existing project unless the user explicitly provided that project name or this same Codex conversation is being redeployed with its stable renderer-generated name.
 - Deploy succeeds but URL extraction fails: return the relevant CLI output plus the local file path.
 - Sensitive-looking values (keys/tokens/passwords): redact unless the user explicitly asked to publish them.
 
@@ -162,6 +178,6 @@ Agent:
 1. `python3 "$SKILL_DIR/scripts/render_chat_html.py" --current --output /tmp/codex-chat-share/index.html` (confirms resolved session path).
 2. Verifies the HTML locally.
 3. `previewship whoami`.
-4. Derives `PROJECT_NAME` from the conversation title.
+4. Reads the stable renderer-generated `PROJECT_NAME`.
 5. `previewship deploy ... -n "$PROJECT_NAME" --json`.
 6. Returns the PreviewShip URL + local path + any limitation.
