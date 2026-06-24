@@ -47,7 +47,7 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 
 | 项目 | Free | Pro（月付） | Pro（年付） |
 |------|-----:|----------:|----------:|
-| 价格 | $0 | $5.40/月活动价（原 $9/月） | $50.40/年活动价（原 $84/年，约 $4.20/月） |
+| 价格 | $0 | $8.10/月默认优惠价（原 $9/月） | $75.60/年默认优惠价（原 $84/年，约 $6.30/月） |
 | 项目数 | 1 | 10 | 20 |
 | 每日部署 | 5 | 50 | 80 |
 | 每月部署 | 20 | 300 | 500 |
@@ -63,7 +63,7 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 | 构建日志可见 | 7 天 | 30 天 | 180 天 |
 | API Key | 1 个 | 1 个 | 1 个 |
 
-Free 默认启用；Pro 仅在 Stripe subscription `active` 时生效；取消/过期回落 Free。不提供 trial。Stripe Price 保留原价 $9/月、$84/年，Checkout 自动应用 40% 优惠后得到上表活动价。
+Free 默认启用；Pro 仅在 Stripe subscription `active` 时生效；取消/过期回落 Free。不提供 trial。Stripe Price 保留原价 $9/月、$84/年，Checkout 自动应用符合条件的优惠：默认新用户 10% off forever；BR/PT 葡语投放与流失/犹豫触发场景使用限时 40% 优惠；符合 legacy 资格的老月付用户升级年付时继续获得 40% off forever。
 
 ## 技术栈
 

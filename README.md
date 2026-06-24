@@ -303,7 +303,7 @@ cursor --install-extension previewship-0.1.8.vsix
 
 | | Free | Pro Monthly | Pro Yearly |
 |-|-----:|----------:|----------:|
-| **Price** | $0 | $5.40/mo launch price (was $9/mo) | $50.40/yr launch price (was $84/yr, $4.20/mo) |
+| **Price** | $0 | $8.10/mo default offer (was $9/mo) | $75.60/yr default offer (was $84/yr, $6.30/mo) |
 | **Projects** | 1 | 10 | 20 |
 | **Daily Deploys** | 5 | 50 | 80 |
 | **Monthly Deploys** | 20 | 300 | 500 |
@@ -313,6 +313,8 @@ cursor --install-extension previewship-0.1.8.vsix
 | **Project Password Access** | Not included | Included | Included |
 | **Public/Password Access Toggle** | Public only | Included | Included |
 | **PreviewShip Watermark** | Included | Removed | Removed |
+
+Stripe Prices remain $9/month and $84/year. Checkout applies the eligible coupon automatically: default new users get 10% off forever; BR/PT Portuguese campaigns and retention flows can receive limited 40% offers; existing legacy monthly users keep legacy 40% forever when upgrading to yearly.
 
 Free plan requires no credit card. Start deploying instantly.
 
