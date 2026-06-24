@@ -303,7 +303,7 @@ cursor --install-extension previewship-0.1.8.vsix
 
 | | Free | Pro Monthly | Pro Yearly |
 |-|-----:|----------:|----------:|
-| **Price** | $0 | $8.10/mo launch price (was $9/mo) | $75.60/yr launch price (was $84/yr, $6.30/mo) |
+| **Price** | $0 | $5.40/mo launch price (was $9/mo) | $50.40/yr launch price (was $84/yr, $4.20/mo) |
 | **Projects** | 1 | 10 | 20 |
 | **Daily Deploys** | 5 | 50 | 80 |
 | **Monthly Deploys** | 20 | 300 | 500 |

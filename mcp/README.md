@@ -217,7 +217,7 @@ Yes. Use `list_projects` to inspect projects, then `delete_project` with the exa
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
-| Price | $0 | $8.10/mo launch price | $75.60/yr launch price |
+| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
 | Daily Deploys | 5 | 50 | 80 |
 | Monthly Deploys | 20 | 300 | 500 |
 | Preview Expiry | 3 days | 30 days | 365 days |
