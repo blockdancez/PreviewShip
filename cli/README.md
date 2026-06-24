@@ -271,7 +271,7 @@ Yes. A single `.html`, `.md`, or `.markdown` file can be deployed directly.
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
-| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
+| Price | $0 | $8.10/mo launch price | $75.60/yr launch price |
 | Daily Deploys | 5 | 50 | 80 |
 | Monthly Deploys | 20 | 300 | 500 |
 | Upload Limit | 15MB | 50MB | 80MB |
