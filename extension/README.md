@@ -1,6 +1,6 @@
 # PreviewShip - VS Code / Cursor Extension
 
-> Deploy React/Vue/Vite/Next build output, HTML files, and Markdown documents from VS Code or Cursor and get a fixed PreviewShip preview URL.
+> Publish HTML online, host HTML files, deploy React/Vue/Vite/Next build output, and publish Markdown from VS Code or Cursor to fixed PreviewShip preview URLs.
 
 PreviewShip lets you publish browser-ready frontend artifacts from your editor: deploy a workspace build folder, upload the active `.html` file, publish Markdown as a web page, or share AI-generated HTML from Cursor, VS Code, Claude, Codex, and other coding workflows.
 
@@ -74,13 +74,17 @@ For framework projects, deploy the static build output rather than a raw source-
 
 ## HTML Publishing Guides
 
+- [Publish HTML online](https://previewship.com/guides/publish-html-online)
+- [Share Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
+- [Publish AI-generated HTML online](https://previewship.com/guides/publish-ai-generated-html)
+- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
+- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Upload HTML file online](https://previewship.com/guides/upload-html-file)
 - [Deploy a React/Vue build output](https://previewship.com/guides/deploy-a-dist-folder)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
-- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
-- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
-- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [Claude HTML artifact to URL](https://previewship.com/guides/claude-html-artifact-to-url)
 

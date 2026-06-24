@@ -10,7 +10,7 @@ PreviewShip is not a source-code build platform. For React, Vue, Vite, Next, Ast
 
 Use this short description for npm, GitHub, VS Code Marketplace, Open VSX, MCP directories, and AI-agent tool listings:
 
-> PreviewShip deploys browser-ready React/Vue/Vite/Next build output, HTML, Markdown, and AI-generated static pages to fixed preview URLs from CLI, VS Code/Cursor, MCP agents, and browser upload.
+> PreviewShip publishes HTML online, hosts HTML files, and deploys browser-ready React/Vue/Vite/Next build output, Markdown, and AI-generated static pages to fixed preview URLs from CLI, VS Code/Cursor, MCP agents, and browser upload.
 
 ## Open Source Packages
 
@@ -45,13 +45,17 @@ PreviewShip provides four open-source client packages:
 
 ## Publishing Workflows
 
+- [Publish HTML online](https://previewship.com/guides/publish-html-online)
+- [Share Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
 - [Deploy a React/Vue build output](https://previewship.com/guides/deploy-a-dist-folder)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
+- [Publish AI-generated HTML online](https://previewship.com/guides/publish-ai-generated-html)
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
 - [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
 - [HTML file hosting](https://previewship.com/guides/html-file-hosting)
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Upload HTML file online](https://previewship.com/guides/upload-html-file)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [HTML deployer](https://previewship.com/guides/html-deployer)
 - [Paste HTML and get a URL](https://previewship.com/guides/paste-html-get-url)

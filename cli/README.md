@@ -1,6 +1,6 @@
 # PreviewShip CLI
 
-> Deploy React/Vue/Vite/Next build output, HTML files, and Markdown documents from the terminal and get a fixed PreviewShip preview URL.
+> Publish HTML online, host HTML files, deploy React/Vue/Vite/Next build output, and publish Markdown from the terminal to fixed PreviewShip preview URLs.
 
 PreviewShip CLI publishes browser-ready frontend artifacts to shareable preview links. Use it to deploy a `dist`, `build`, `out`, or `public` folder, upload a single `.html` file, publish Markdown as a readable web page, or let an AI coding agent return a live URL from a scriptable command.
 
@@ -48,13 +48,17 @@ Important: deploy static build output, not a raw source-code folder. For React, 
 
 ## HTML Publishing Guides
 
+- [Publish HTML online](https://previewship.com/guides/publish-html-online)
+- [Share Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
+- [Publish AI-generated HTML online](https://previewship.com/guides/publish-ai-generated-html)
+- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
+- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Upload HTML file online](https://previewship.com/guides/upload-html-file)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
 - [Codex website preview](https://previewship.com/guides/codex-website-preview)
-- [Upload HTML file to website](https://previewship.com/guides/upload-html-file-to-website)
-- [HTML file hosting](https://previewship.com/guides/html-file-hosting)
-- [Host HTML file online](https://previewship.com/guides/host-html-file-online)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [HTML deployer](https://previewship.com/guides/html-deployer)
 
@@ -239,7 +243,7 @@ For MCP and agent directories such as Glama, Smithery, and mcp.so, describe Prev
 - **Short description:** Deploy browser-ready React/Vue/Vite/Next build output, HTML, Markdown, and static artifacts from CLI, MCP, VS Code, Cursor, or browser upload and get a fixed PreviewShip preview URL.
 - **Install:** `npx previewship deploy ./dist` for CLI; `npx -y previewship-mcp` for MCP clients.
 - **Management commands:** list projects, delete projects, set public/password access, list versions, roll back a fixed URL, redeploy expired links, list deployment history.
-- **Best keywords:** React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, project password preview, rollback static preview, static preview hosting.
+- **Best keywords:** publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, project password preview, rollback static preview, static preview hosting.
 
 ## FAQ
 

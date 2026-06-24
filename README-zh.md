@@ -10,7 +10,7 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 
 用于 npm、GitHub、VS Code Marketplace、Open VSX、MCP 目录和 AI 工具目录时，可以使用这句：
 
-> PreviewShip 可以通过 CLI、VS Code/Cursor、MCP 智能体和浏览器上传，把 React/Vue/Vite/Next 构建产物、HTML、Markdown 和 AI 生成静态页面部署成固定预览链接。
+> PreviewShip 可以通过 CLI、VS Code/Cursor、MCP 智能体和浏览器上传，在线发布 HTML、托管 HTML 文件，并把 React/Vue/Vite/Next 构建产物、Markdown 和 AI 生成静态页面部署成固定预览链接。
 
 ## 核心能力
 
@@ -42,6 +42,18 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 | 单个 `.html` 文件 | 支持 | 自动作为 `index.html` 发布 |
 | Markdown `.md` / `.markdown` 文件 | 支持 | 通过生成的 Markdown viewer 发布 |
 | 包含 `package.json`、`src/`、`node_modules` 的源码目录 | 不支持 | 请先 build，再部署生成的静态产物 |
+
+## HTML 发布与托管指南
+
+- [在线发布 HTML](https://previewship.com/guides/publish-html-online)
+- [分享 Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
+- [发布 AI 生成的 HTML](https://previewship.com/guides/publish-ai-generated-html)
+- [上传 HTML 文件到网站](https://previewship.com/guides/upload-html-file-to-website)
+- [HTML 文件托管](https://previewship.com/guides/html-file-hosting)
+- [在线托管 HTML 文件](https://previewship.com/guides/host-html-file-online)
+- [在线上传 HTML 文件](https://previewship.com/guides/upload-html-file)
+- [粘贴 HTML 并获得 URL](https://previewship.com/guides/paste-html-get-url)
+- [把 ChatGPT HTML 变成网站 URL](https://previewship.com/guides/chatgpt-html-to-website)
 
 ## 套餐
 
