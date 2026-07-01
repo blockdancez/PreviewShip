@@ -82,11 +82,13 @@ For framework projects, deploy the static build output rather than a raw source-
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
 - [Upload HTML file online](https://previewship.com/guides/upload-html-file)
 - [Deploy a React/Vue build output](https://previewship.com/guides/deploy-a-dist-folder)
+- [HTML to page](https://previewship.com/guides/html-to-page)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [Claude HTML artifact to URL](https://previewship.com/guides/claude-html-artifact-to-url)
+- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ## Commands
 

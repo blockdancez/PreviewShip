@@ -48,11 +48,13 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 - [在线发布 HTML](https://previewship.com/guides/publish-html-online)
 - [分享 Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
 - [发布 AI 生成的 HTML](https://previewship.com/guides/publish-ai-generated-html)
+- [HTML 转网页](https://previewship.com/guides/html-to-page)
 - [上传 HTML 文件到网站](https://previewship.com/guides/upload-html-file-to-website)
 - [HTML 文件托管](https://previewship.com/guides/html-file-hosting)
 - [在线托管 HTML 文件](https://previewship.com/guides/host-html-file-online)
 - [在线上传 HTML 文件](https://previewship.com/guides/upload-html-file)
 - [粘贴 HTML 并获得 URL](https://previewship.com/guides/paste-html-get-url)
+- [Netlify Drop 替代方案](https://previewship.com/compare/previewship-vs-netlify-drop)
 - [把 ChatGPT HTML 变成网站 URL](https://previewship.com/guides/chatgpt-html-to-website)
 
 ## 套餐

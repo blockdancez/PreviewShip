@@ -124,6 +124,7 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 - [HTML file hosting](https://previewship.com/guides/html-file-hosting)
 - [Host HTML file online](https://previewship.com/guides/host-html-file-online)
 - [Upload HTML file online](https://previewship.com/guides/upload-html-file)
+- [HTML to page](https://previewship.com/guides/html-to-page)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
@@ -131,6 +132,7 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [ChatGPT HTML to website](https://previewship.com/guides/chatgpt-html-to-website)
 - [Claude HTML artifact to URL](https://previewship.com/guides/claude-html-artifact-to-url)
+- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ### `check_deployment`
 
@@ -188,7 +190,7 @@ Use this metadata when submitting to Glama, Smithery, mcp.so, or other MCP direc
 - **Category:** Deployment / static preview hosting / developer tools
 - **Short description:** MCP server for deploying React/Vue/Vite/Next build output, HTML, Markdown, and AI-generated static pages from coding agents to fixed PreviewShip preview URLs.
 - **Tools:** `deploy_preview`, `check_deployment`, `show_usage`, `list_projects`, `get_project`, `delete_project`, `redeploy_project_latest`, `get_project_access`, `set_project_access`, `list_project_versions`, `rollback_project_version`, `list_deployments`
-- **Best keywords:** MCP static hosting, publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, Cursor MCP deploy, password protected preview, rollback static preview, fixed preview URL.
+- **Best keywords:** MCP static hosting, publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, HTML to page, Netlify Drop alternative, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, Cursor MCP deploy, password protected preview, rollback static preview, fixed preview URL.
 - **Required env:** `PREVIEWSHIP_API_KEY`
 
 ## FAQ

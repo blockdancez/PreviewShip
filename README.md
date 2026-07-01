@@ -48,6 +48,7 @@ PreviewShip provides four open-source client packages:
 - [Publish HTML online](https://previewship.com/guides/publish-html-online)
 - [Share Claude HTML artifacts](https://previewship.com/guides/share-claude-html-artifacts)
 - [Deploy a React/Vue build output](https://previewship.com/guides/deploy-a-dist-folder)
+- [HTML to page](https://previewship.com/guides/html-to-page)
 - [HTML to link](https://previewship.com/guides/html-to-link)
 - [Markdown to website](https://previewship.com/guides/markdown-to-website)
 - [Publish AI-generated HTML online](https://previewship.com/guides/publish-ai-generated-html)
@@ -59,6 +60,7 @@ PreviewShip provides four open-source client packages:
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [HTML deployer](https://previewship.com/guides/html-deployer)
 - [Paste HTML and get a URL](https://previewship.com/guides/paste-html-get-url)
+- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
 - [Turn ChatGPT HTML into a website](https://previewship.com/guides/chatgpt-html-to-website)
 - [Publish a Claude HTML artifact](https://previewship.com/guides/claude-html-artifact-to-url)
 - Share a Codex chat transcript as a public PreviewShip URL with the `share-codex-chat` skill
