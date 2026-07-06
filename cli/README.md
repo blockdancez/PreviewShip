@@ -35,6 +35,14 @@ npx previewship deploy ./README.md
 
 Important: deploy static build output, not a raw source-code folder. For React, Vue, Vite, Next static export, Astro, Svelte, or similar framework projects, run the build command first and deploy `dist`, `build`, `out`, `public`, or the generated static folder that contains `index.html` and assets.
 
+## Useful Deep Links
+
+- [Share Claude HTML artifacts as live URLs](https://previewship.com/guides/share-claude-html-artifacts)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
+- [Host an HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
+
 ## Supported Inputs
 
 | Input | Works? | Notes |
@@ -62,7 +70,8 @@ Important: deploy static build output, not a raw source-code folder. For React, 
 - [Codex website preview](https://previewship.com/guides/codex-website-preview)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [HTML deployer](https://previewship.com/guides/html-deployer)
-- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ## Installation
 
@@ -245,7 +254,7 @@ For MCP and agent directories such as Glama, Smithery, and mcp.so, describe Prev
 - **Short description:** Deploy browser-ready React/Vue/Vite/Next build output, HTML, Markdown, and static artifacts from CLI, MCP, VS Code, Cursor, or browser upload and get a fixed PreviewShip preview URL.
 - **Install:** `npx previewship deploy ./dist` for CLI; `npx -y previewship-mcp` for MCP clients.
 - **Management commands:** list projects, delete projects, set public/password access, list versions, roll back a fixed URL, redeploy expired links, list deployment history.
-- **Best keywords:** publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, HTML to page, Netlify Drop alternative, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, project password preview, rollback static preview, static preview hosting.
+- **Best keywords:** publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, HTML to page, Netlify Drop alternative, Netlify Drop alternative for HTML file, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, hostmyclaudehtml, project password preview, rollback static preview, static preview hosting.
 
 ## FAQ
 

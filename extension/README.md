@@ -62,6 +62,16 @@ To publish a single HTML or Markdown file directly, open the file and run `Previ
 
 For framework projects, deploy the static build output rather than a raw source-code workspace. Run `npm run build` first and deploy `dist`, `build`, `out`, `public`, or another folder that contains `index.html` and assets. PreviewShip does not run `npm install` or build source zips after upload.
 
+## Useful Deep Links
+
+Use these links when listing PreviewShip in extension marketplaces, README files, articles, or community answers:
+
+- [Share Claude HTML artifacts as live URLs](https://previewship.com/guides/share-claude-html-artifacts)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
+- [Host an HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
+
 ## Supported Inputs
 
 | Input | Works? | How to deploy |
@@ -88,7 +98,8 @@ For framework projects, deploy the static build output rather than a raw source-
 - [AI-generated HTML preview](https://previewship.com/guides/ai-generated-html-preview)
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [Claude HTML artifact to URL](https://previewship.com/guides/claude-html-artifact-to-url)
-- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ## Commands
 

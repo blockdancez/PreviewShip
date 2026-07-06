@@ -12,6 +12,16 @@ Use this short description for npm, GitHub, VS Code Marketplace, Open VSX, MCP d
 
 > PreviewShip publishes HTML online, hosts HTML files, and deploys browser-ready React/Vue/Vite/Next build output, Markdown, and AI-generated static pages to fixed preview URLs from CLI, VS Code/Cursor, MCP agents, and browser upload.
 
+## Useful Deep Links
+
+Use these links when listing PreviewShip in developer directories, MCP directories, README files, articles, or community answers:
+
+- [Share Claude HTML artifacts as live URLs](https://previewship.com/guides/share-claude-html-artifacts)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
+- [Host an HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
+
 ## Open Source Packages
 
 PreviewShip provides four open-source client packages:
@@ -60,7 +70,8 @@ PreviewShip provides four open-source client packages:
 - [Publish HTML file to web](https://previewship.com/guides/publish-html-file-to-web)
 - [HTML deployer](https://previewship.com/guides/html-deployer)
 - [Paste HTML and get a URL](https://previewship.com/guides/paste-html-get-url)
-- [Netlify Drop alternative](https://previewship.com/compare/previewship-vs-netlify-drop)
+- [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
+- [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
 - [Turn ChatGPT HTML into a website](https://previewship.com/guides/chatgpt-html-to-website)
 - [Publish a Claude HTML artifact](https://previewship.com/guides/claude-html-artifact-to-url)
 - Share a Codex chat transcript as a public PreviewShip URL with the `share-codex-chat` skill
