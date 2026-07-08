@@ -4,6 +4,8 @@
 
 这个功能不是 PreviewShip 的主部署流程。普通用户仍然可以直接用控制台、CLI、MCP、VS Code/Cursor 插件部署 HTML、Markdown 或静态构建产物。`share-codex-chat` 更适合需要分享 Codex 调试过程、实现记录、评审上下文或 AI 协作结果的场景。
 
+如果要分享 Claude Code 对话，请使用 [`share-claude-code-chat`](./share-claude-code-chat.md)。Claude Code 的本地 JSONL、事件类型和工具活动结构与 Codex 不同，需要独立解析与渲染。
+
 ## 安装
 
 全局安装：

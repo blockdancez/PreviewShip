@@ -20,6 +20,8 @@ Use these links when listing PreviewShip in developer directories, MCP directori
 - [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
 - [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
 - [Host an HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Share a Codex chat conversation](https://previewship.com/docs/share-codex-chat)
+- [Share a Claude Code chat conversation](https://previewship.com/docs/share-claude-code-chat)
 - [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ## Open Source Packages
@@ -31,7 +33,7 @@ PreviewShip provides four open-source client packages:
 | [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy frontend build output, HTML, or Markdown from the terminal |
 | [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native deploy tool for Claude Code, Cursor, Windsurf, and MCP agents |
 | [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy build output or active HTML/Markdown files from your editor |
-| [Agent Skills](#agent-skills) | GitHub / `npx skills` | Installable skills for Codex workflows, including high-fidelity chat sharing |
+| [Agent Skills](#agent-skills) | GitHub / `npx skills` | Installable skills for Codex and Claude Code workflows, including high-fidelity chat sharing |
 
 ## Deployment Methods
 
@@ -40,7 +42,7 @@ PreviewShip provides four open-source client packages:
 | CLI | `npx previewship deploy ./dist`, `./report.html`, or `./README.md` | Terminal, scripts, CI/CD, frontend builds, generated HTML/Markdown |
 | MCP Server | Say "build the app, deploy the dist folder to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf, agent workflows |
 | VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, build folders, active HTML/Markdown files |
-| Agent Skill | `$share-codex-chat 分享当前 Codex 对话` | Publish a Codex conversation as a shareable high-fidelity chat page |
+| Agent Skill | `$share-codex-chat` / `$share-claude-code-chat` | Publish Codex or Claude Code conversations as shareable high-fidelity chat pages |
 | Web Console | Upload zip/html/markdown or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
 
 ## Supported Inputs
@@ -75,6 +77,7 @@ PreviewShip provides four open-source client packages:
 - [Turn ChatGPT HTML into a website](https://previewship.com/guides/chatgpt-html-to-website)
 - [Publish a Claude HTML artifact](https://previewship.com/guides/claude-html-artifact-to-url)
 - Share a Codex chat transcript as a public PreviewShip URL with the `share-codex-chat` skill
+- Share a Claude Code chat transcript and tool timeline as a public PreviewShip URL with the `share-claude-code-chat` skill
 
 ---
 
@@ -165,7 +168,7 @@ Use `updateProjectAccess(projectId, { visibility: 'PUBLIC' })` to clear an exist
 
 ## Agent Skills
 
-Installable skills make PreviewShip available as a Codex-native workflow, not just a deployment command. The included `share-codex-chat` skill turns a Codex conversation into a high-fidelity HTML page and deploys it to PreviewShip, so users can share debugging sessions, implementation reviews, and AI-generated work without taking screenshots.
+Installable skills make PreviewShip available as an agent-native workflow, not just a deployment command. The included `share-codex-chat` and `share-claude-code-chat` skills turn AI coding conversations into high-fidelity HTML pages and deploy them to PreviewShip, so users can share debugging sessions, implementation reviews, tool timelines, and AI-generated work without taking screenshots.
 
 ### Install Share Codex Chat
 
@@ -188,6 +191,28 @@ $share-codex-chat 分享当前 Codex 对话
 ```
 
 The skill preserves visible Codex UI elements such as user bubbles, assistant replies, uploaded image thumbnails, plugin mentions, collapsed processing details, file cards, and edited-file summaries. It filters hidden system/developer context and deploys the generated HTML through the PreviewShip CLI.
+
+### Install Share Claude Code Chat
+
+Global install:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -g --yes
+```
+
+Project-local install, run from the project root:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex --yes
+```
+
+Then use it inside Codex:
+
+```text
+$share-claude-code-chat 分享 Claude Code 对话
+```
+
+The skill reads Claude Code JSONL sessions from `~/.claude/projects`, renders visible messages and safe tool activity as a polished share page, hides reasoning and raw tool outputs, and deploys the generated HTML through the PreviewShip CLI.
 
 ---
 

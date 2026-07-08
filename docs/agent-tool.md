@@ -4,11 +4,13 @@
 
 ---
 
-## 0. 可选 Agent Skill：Codex 会话分享
+## 0. 可选 Agent Skills：会话分享
 
-PreviewShip 仓库内置 `share-codex-chat` skill，Codex 用户可以安装后把当前 Codex 对话导出为高保真 HTML 页面，并通过 PreviewShip CLI 部署成公开 URL。
+PreviewShip 仓库内置会话分享 skills。Codex 用户可以用 `share-codex-chat` 把当前 Codex 对话导出为高保真 HTML 页面；也可以用 `share-claude-code-chat` 读取本地 Claude Code JSONL 历史，把 Claude Code 对话和工具活动时间线发布成可分享页面。
 
 这个功能是辅助能力，不是 PreviewShip 的主部署流程；普通部署仍然使用 CLI、MCP、编辑器插件或 Web 控制台发布 HTML、Markdown 和静态构建产物。
+
+### Share Codex Chat
 
 全局安装：
 
@@ -29,6 +31,28 @@ $share-codex-chat 分享当前 Codex 对话
 ```
 
 详见：[Share Codex Chat Skill 使用说明](./share-codex-chat.md)。
+
+### Share Claude Code Chat
+
+全局安装：
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -g --yes
+```
+
+项目内局部安装：
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex --yes
+```
+
+在 Codex 中使用：
+
+```text
+$share-claude-code-chat 分享 Claude Code 对话
+```
+
+详见：[Share Claude Code Chat Skill 使用说明](./share-claude-code-chat.md)。
 
 ---
 

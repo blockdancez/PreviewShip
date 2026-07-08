@@ -13,6 +13,7 @@
 !docs/
 !docs/agent-tool.md
 !docs/share-codex-chat.md
+!docs/share-claude-code-chat.md
 !README.md
 !README-zh.md
 !.gitignore
@@ -27,4 +28,3 @@ __pycache__/
 *.tgz
 .DS_Store
 *.log
-

@@ -8,14 +8,20 @@ It is built for frontend review workflows, AI-generated HTML previews, Claude/Cu
 
 Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a one-hour temporary frontend build, HTML, or Markdown preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
 
-For Codex users, PreviewShip also ships an installable skill that turns the current Codex conversation into a high-fidelity share page and deploys it with this CLI:
+For Codex and Claude Code users, PreviewShip also ships installable skills that turn coding conversations into high-fidelity share pages and deploy them with this CLI:
 
 ```bash
-# Global install
+# Share Codex Chat: global install
 npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
 
-# Project-local install, run from the project root
+# Share Codex Chat: project-local install, run from the project root
 npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
+
+# Share Claude Code Chat: global install
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -g --yes
+
+# Share Claude Code Chat: project-local install
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex --yes
 ```
 
 ## Quick Start
@@ -41,6 +47,8 @@ Important: deploy static build output, not a raw source-code folder. For React, 
 - [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
 - [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
 - [Host an HTML file online](https://previewship.com/guides/host-html-file-online)
+- [Share a Codex chat conversation](https://previewship.com/docs/share-codex-chat)
+- [Share a Claude Code chat conversation](https://previewship.com/docs/share-claude-code-chat)
 - [Compare PreviewShip with Netlify Drop](https://previewship.com/compare/previewship-vs-netlify-drop)
 
 ## Supported Inputs
@@ -237,13 +245,14 @@ Example prompts:
 - "Set project 42 back to public access."
 - "Show rollbackable versions for project 42."
 
-Codex users can install the repository skill and invoke it in chat:
+Codex users can install the repository skills and invoke them in chat:
 
 ```text
 $share-codex-chat 分享当前 Codex 对话
+$share-claude-code-chat 分享 Claude Code 对话
 ```
 
-The skill renders visible Codex conversation records, uploaded image thumbnails, plugin mentions, file cards, and edited-file summaries into a self-contained HTML page, then deploys that page through PreviewShip.
+The skills render visible Codex or Claude Code conversation records into self-contained HTML pages, preserve safe tool activity summaries where supported, hide reasoning/raw tool outputs, and deploy the generated page through PreviewShip.
 
 ## Directory Listings
 
@@ -254,7 +263,7 @@ For MCP and agent directories such as Glama, Smithery, and mcp.so, describe Prev
 - **Short description:** Deploy browser-ready React/Vue/Vite/Next build output, HTML, Markdown, and static artifacts from CLI, MCP, VS Code, Cursor, or browser upload and get a fixed PreviewShip preview URL.
 - **Install:** `npx previewship deploy ./dist` for CLI; `npx -y previewship-mcp` for MCP clients.
 - **Management commands:** list projects, delete projects, set public/password access, list versions, roll back a fixed URL, redeploy expired links, list deployment history.
-- **Best keywords:** publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, HTML to page, Netlify Drop alternative, Netlify Drop alternative for HTML file, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, hostmyclaudehtml, project password preview, rollback static preview, static preview hosting.
+- **Best keywords:** publish HTML online, host HTML file online, HTML file hosting, upload HTML file to website, HTML to page, Netlify Drop alternative, Netlify Drop alternative for HTML file, React build deploy, Vue build deploy, Vite deploy, Next static export deploy, HTML to link, Markdown to website, AI-generated HTML preview, Claude HTML preview, Claude artifact URL, ChatGPT HTML website, Codex website preview, Claude Code chat sharing, Codex chat sharing, hostmyclaudehtml, project password preview, rollback static preview, static preview hosting.
 
 ## FAQ
 
