@@ -45,3 +45,35 @@ npx previewship login --key PREVIEWSHIP_API_KEY_HERE
 ```
 
 Users can create an API Key at [previewship.com](https://previewship.com).
+
+## Share Claude Code Chat
+
+`share-claude-code-chat` exports a local Claude Code session from `~/.claude/projects` into a polished, self-contained HTML page and deploys it with PreviewShip. It is designed for debugging notes, implementation records, review handoffs, and other conversations where the Claude Code chat itself is the artifact.
+
+### Install
+
+Global install:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -g --yes
+```
+
+Project-local install, run from the project root:
+
+```bash
+npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex --yes
+```
+
+### Use
+
+```text
+$share-claude-code-chat 分享 Claude Code 对话
+```
+
+The skill will:
+
+- Read Claude Code main-session JSONL files from `~/.claude/projects`.
+- Skip subagent sessions during automatic current-session selection.
+- Render user and assistant visible text with polished Markdown, code blocks, tables, context cards, and collapsed tool activity summaries.
+- Filter hidden thinking, raw tool outputs, file-history snapshots, attachment bodies, API keys, and secret-looking values.
+- Deploy the generated HTML through the PreviewShip CLI and return the public URL.

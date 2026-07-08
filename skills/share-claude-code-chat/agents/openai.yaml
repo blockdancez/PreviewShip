@@ -1,0 +1,4 @@
+interface:
+  display_name: "Share Claude Code Chat"
+  short_description: "Publish Claude Code chats as polished PreviewShip pages."
+  default_prompt: "Use $share-claude-code-chat to share the current Claude Code conversation as a PreviewShip URL."
