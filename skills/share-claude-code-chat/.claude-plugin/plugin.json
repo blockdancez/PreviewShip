@@ -1,0 +1,22 @@
+{
+  "name": "previewship-claude-code-chat-sharing",
+  "displayName": "PreviewShip Claude Code Chat Sharing",
+  "version": "1.0.0",
+  "description": "Share Claude Code conversations as high-fidelity PreviewShip pages with safe tool timelines.",
+  "author": {
+    "name": "PreviewShip",
+    "email": "previewship@metainnovation.site"
+  },
+  "homepage": "https://previewship.com/docs/share-claude-code-chat",
+  "repository": "https://github.com/blockdancez/PreviewShip",
+  "license": "MIT",
+  "keywords": [
+    "previewship",
+    "claude-code",
+    "agent-skills",
+    "chat-export",
+    "tool-timeline",
+    "transcript-sharing",
+    "developer-tools"
+  ]
+}

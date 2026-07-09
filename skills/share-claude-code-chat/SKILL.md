@@ -1,6 +1,14 @@
 ---
 name: share-claude-code-chat
-description: Export a local Claude Code conversation from ~/.claude/projects JSONL into a polished, self-contained HTML chat page, then deploy it with PreviewShip CLI to get a public share URL. Use when the user wants to share a Claude Code conversation, publish Claude Code chat history, generate an HTML transcript, or deploy a Claude Code debugging/review handoff. 中文触发词：分享 Claude Code 对话、导出 Claude Code 聊天、生成 Claude Code 聊天 HTML、部署 Claude Code 聊天记录。
+description: Export Claude Code JSONL conversations into high-fidelity HTML pages with safe tool timelines, then deploy them to PreviewShip as public share links. Use when users ask to share a Claude Code chat, export Claude Code history, publish a Claude Code conversation, or create a public URL for implementation and review context.
+license: MIT
+metadata:
+  author: PreviewShip
+  version: "1.0.0"
+  repository: https://github.com/blockdancez/PreviewShip
+  docs: https://previewship.com/docs/share-claude-code-chat
+  install: npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -g --yes
+  installLocal: npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex --yes
 ---
 
 # Share Claude Code Chat

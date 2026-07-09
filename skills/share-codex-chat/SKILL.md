@@ -1,13 +1,14 @@
 ---
 name: share-codex-chat
-description: Export the current Codex desktop conversation into a self-contained, high-fidelity HTML page that reproduces the visible Codex chat, then deploy it with the PreviewShip CLI to get a public share link. Use when the user wants to share a Codex conversation, publish chat history, generate a chat HTML page, or deploy the transcript to PreviewShip. 中文触发词：分享当前对话、导出 Codex 对话、生成聊天 HTML、部署聊天记录。
+description: Export the current visible Codex conversation into a high-fidelity HTML page and deploy it to PreviewShip as a public share link. Use when users ask to share a Codex chat, export a Codex transcript, publish a Codex conversation, or create a public URL for implementation context.
 license: MIT
 metadata:
   author: PreviewShip
-  version: "2.0"
+  version: "2.0.0"
   repository: https://github.com/blockdancez/PreviewShip
-  install: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --copy --yes
-  installLocal: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --copy --yes
+  docs: https://previewship.com/docs/share-codex-chat
+  install: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex -g --yes
+  installLocal: npx skills add blockdancez/PreviewShip --skill share-codex-chat -a codex --yes
 ---
 
 # Share Codex Chat

@@ -2,6 +2,8 @@
 *
 
 # 只跟踪以下目录和文件
+!.claude-plugin/
+!.claude-plugin/**
 !cli/
 !cli/**
 !mcp/
@@ -12,6 +14,8 @@
 !skills/**
 !docs/
 !docs/agent-tool.md
+!docs/agent-skill-distribution.md
+!docs/agent-skill-submissions.md
 !docs/share-codex-chat.md
 !docs/share-claude-code-chat.md
 !README.md
