@@ -9,6 +9,7 @@ export interface CreateDeploymentResponse {
   status: string;
   deploymentSource?: string;
   createdAt: string;
+  visibility?: ProjectVisibility;
 }
 
 // GET /v1/deployments/{id} 响应
@@ -21,6 +22,8 @@ export interface DeploymentDetail {
   previewUrl: string | null;
   previewExpiresAt?: string | null;
   errorMessage: string | null;
+  failureCode?: string | null;
+  visibility?: ProjectVisibility;
   createdAt: string;
   updatedAt: string;
 }
@@ -174,6 +177,10 @@ export interface DeployOptions {
   excludePatterns?: string[];
   /** 部署入口（CLI/MCP 等），用于后台统计 */
   source?: 'CLI' | 'MCP';
+  /** 发布时的访问方式；不传时新项目为 PUBLIC，已有项目保持原设置 */
+  visibility?: Extract<ProjectVisibility, 'PUBLIC' | 'PASSWORD'>;
+  /** PASSWORD 发布所需密码，长度 6～100 */
+  password?: string;
 }
 
 /** 部署结果 */
@@ -185,6 +192,7 @@ export interface DeployResult {
   status?: string;
   fileCount?: number;
   zipSizeBytes?: number;
+  visibility?: ProjectVisibility;
   error?: {
     code: string;
     message: string;

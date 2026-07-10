@@ -16,6 +16,10 @@ Use this short description for npm, GitHub, VS Code Marketplace, Open VSX, MCP d
 
 Use these links when listing PreviewShip in developer directories, MCP directories, README files, articles, or community answers:
 
+- [Upload a page now — no Git, domain, or server required](https://previewship.com/try)
+- [Browse product comparisons](https://previewship.com/compare)
+- [Verify product and pricing facts](https://previewship.com/facts)
+- [Deploy the minimal static example](https://github.com/blockdancez/PreviewShip/tree/main/examples/hello-previewship)
 - [Share Claude HTML artifacts as live URLs](https://previewship.com/guides/share-claude-html-artifacts)
 - [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
 - [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
@@ -44,6 +48,8 @@ PreviewShip provides four open-source client packages:
 | VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, build folders, active HTML/Markdown files |
 | Agent Skill | `$share-codex-chat` / `$share-claude-code-chat` | Publish Codex or Claude Code conversations as shareable high-fidelity chat pages |
 | Web Console | Upload zip/html/markdown or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
+
+Each project keeps one fixed preview URL. Public and password-protected publishing are available through the same deployment flow; password protection is a Pro feature.
 
 ## Supported Inputs
 

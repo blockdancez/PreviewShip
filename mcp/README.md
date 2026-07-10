@@ -4,7 +4,7 @@
 
 PreviewShip MCP gives Claude Code, Cursor, Windsurf, Codex-compatible workflows, and any MCP-compatible client a native way to publish browser-ready frontend artifacts. Agents can deploy a React/Vue/Vite/Next static build, upload an HTML file, publish Markdown, share AI-generated HTML, or return a QA/client review link without asking the user to open a hosting dashboard.
 
-For a no-signup browser trial, use <https://previewship.com/try> to publish a one-hour temporary frontend build, HTML, or Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
+For a no-signup browser trial, use <https://previewship.com/try> to publish a 24-hour temporary frontend build, HTML, or Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
 
 ## What This MCP Server Does
 
@@ -100,6 +100,8 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 - `path` (optional) — Directory, single `.html` file, or Markdown file to deploy. Defaults to current working directory.
 - `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting slug.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
+- `visibility` (optional) — `PUBLIC` or `PASSWORD`, applied before the deployment becomes available. New projects default to public; existing projects keep their current access when omitted.
+- `password` (optional) — Required with `visibility: "PASSWORD"`; 6–100 characters. Do not repeat the password in follow-up output.
 
 **Important:** when `path` is a directory, it should be a static build artifact such as `dist`, `build`, `out`, `public`, or another folder containing `index.html` and browser assets. Ask the agent to run the framework build first. Do not deploy a raw source-code zip/folder with `package.json`, `src/`, and `node_modules` unless it is already static output.
 
@@ -112,6 +114,7 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 > "Deploy README.md and share the preview link"
 > "Publish this ChatGPT HTML as a website URL"
 > "Host page.html online and return the URL"
+> "Deploy the dist folder with password access, and do not repeat the password"
 > "Help me deploy and share a preview link"
 
 ## Supported Inputs
@@ -234,7 +237,8 @@ Yes. Use `list_projects` to inspect projects, then `delete_project` with the exa
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
-| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
+| Default price | $0 | $8.10/mo | $75.60/yr |
+| Eligible BR/PT regional price | $0 | $5.40/mo | $50.40/yr |
 | Daily Deploys | 5 | 50 | 80 |
 | Monthly Deploys | 20 | 300 | 500 |
 | Preview Expiry | 3 days | 30 days | 365 days |
@@ -242,6 +246,8 @@ Yes. Use `list_projects` to inspect projects, then `delete_project` with the exa
 | Project Password Access | Not included | Included | Included |
 | Public/Password Access Toggle | Public only | Included | Included |
 | PreviewShip Watermark | Included | Removed | Removed |
+
+[View verified pricing and eligibility](https://previewship.com/pricing.md) · [Read pricing and limits docs](https://previewship.com/docs/pricing-limits)
 
 [View plans](https://previewship.com/billing)
 

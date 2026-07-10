@@ -40,6 +40,19 @@ function createClient(): ApiClient {
 export async function deploy(options: DeployOptions = {}): Promise<DeployResult> {
   const client = createClient();
 
+  if (options.visibility === 'PASSWORD' && !options.password) {
+    return {
+      success: false,
+      error: { code: 'PASSWORD_REQUIRED', message: 'Password is required for PASSWORD access.' },
+    };
+  }
+  if (options.password && (options.password.length < 6 || options.password.length > 100)) {
+    return {
+      success: false,
+      error: { code: 'INVALID_PASSWORD', message: 'Password must be between 6 and 100 characters.' },
+    };
+  }
+
   // 确定部署输入
   const deployPath = path.resolve(options.path || '.');
   if (!fs.existsSync(deployPath)) {
@@ -89,7 +102,10 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   }
 
   // 上传
-  const created = await client.createDeployment(projectName, zipBuffer, options.source || 'CLI');
+  const created = await client.createDeployment(projectName, zipBuffer, options.source || 'CLI', {
+    visibility: options.visibility,
+    password: options.password,
+  });
 
   // 轮询
   const detail = await pollDeployment(client, created.deploymentId);
@@ -103,6 +119,7 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
       status: detail.status,
       fileCount,
       zipSizeBytes: zipBuffer.length,
+      visibility: detail.visibility || created.visibility,
     };
   }
 

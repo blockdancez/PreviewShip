@@ -1,7 +1,7 @@
 {
   "name": "previewship",
   "displayName": "PreviewShip",
-  "description": "Publish HTML online, host HTML files, and deploy React/Vue/Vite builds to fixed preview URLs from VS Code or Cursor.",
+  "description": "Upload HTML, Markdown, or static build output from VS Code/Cursor and get a fixed share link—no Git, domain, or server setup.",
   "version": "1.0.10",
   "publisher": "previewship",
   "icon": "resources/icon.png",

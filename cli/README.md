@@ -6,7 +6,7 @@ PreviewShip CLI publishes browser-ready frontend artifacts to shareable preview 
 
 It is built for frontend review workflows, AI-generated HTML previews, Claude/Cursor/Codex agent handoffs, client approval links, QA links, and static build sharing without Git or CI/CD setup.
 
-Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a one-hour temporary frontend build, HTML, or Markdown preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
+Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a 24-hour temporary frontend build, HTML, or Markdown preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
 
 For Codex and Claude Code users, PreviewShip also ships installable skills that turn coding conversations into high-fidelity share pages and deploy them with this CLI:
 
@@ -112,6 +112,8 @@ previewship deploy ./dist            # Deploy specific directory
 previewship deploy ./report.html     # Deploy a single HTML file as index.html
 previewship deploy ./README.md       # Render Markdown and deploy it as index.html
 previewship deploy -n my-project     # Set project name
+previewship deploy ./dist --public   # Publish as public
+previewship deploy ./dist --password "review-pass" # Apply Pro password access before publish
 previewship deploy --json            # JSON output (for scripting/agents)
 previewship deploy --exclude "*.map" # Extra exclude patterns
 ```
@@ -119,6 +121,8 @@ previewship deploy --exclude "*.map" # Extra exclude patterns
 If you pass a directory, it should already be deployable static output. Do not point the CLI at an unbuilt React/Vue/Next source folder unless that folder itself contains the final `index.html` and browser assets.
 
 Project names are display names inside PreviewShip. Use a short name you recognize; PreviewShip automatically creates a deployment-safe hosting slug.
+
+Access is applied before the new deployment becomes available. Use either `--public` or `--password`, never both. Passwords must be 6–100 characters. If access is omitted, a new project is public and an existing project keeps its current setting.
 
 ### `previewship status <id>`
 
@@ -295,7 +299,8 @@ Yes. A single `.html`, `.md`, or `.markdown` file can be deployed directly.
 
 | | Free | Pro Monthly | Pro Yearly |
 |------|------|------------|------------|
-| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
+| Default price | $0 | $8.10/mo | $75.60/yr |
+| Eligible BR/PT regional price | $0 | $5.40/mo | $50.40/yr |
 | Daily Deploys | 5 | 50 | 80 |
 | Monthly Deploys | 20 | 300 | 500 |
 | Upload Limit | 15MB | 50MB | 80MB |
@@ -305,7 +310,7 @@ Yes. A single `.html`, `.md`, or `.markdown` file can be deployed directly.
 | Public/Password Access Toggle | Public only | Included | Included |
 | PreviewShip Watermark | Included | Removed | Removed |
 
-[View full plan comparison](https://previewship.com/billing)
+[View verified pricing and eligibility](https://previewship.com/pricing.md) · [Read pricing and limits docs](https://previewship.com/docs/pricing-limits)
 
 ## License
 

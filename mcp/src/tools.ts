@@ -9,7 +9,7 @@ import {
 } from 'previewship';
 
 const DEFAULT_SERVER_URL = 'https://api.previewship.com';
-const MCP_VERSION = '1.0.6';
+const MCP_VERSION = '1.0.11';
 
 type ProjectSummary = {
   id: number;
@@ -69,7 +69,8 @@ export function registerTools(server: McpServer): void {
       description:
         'Deploy a static website to PreviewShip preview environment and get a shareable preview URL. ' +
         'Works with HTML/CSS/JS websites, React/Vue/Angular build outputs (dist/build directories), ' +
-        'single AI-generated .html files, Markdown documents, static site generator outputs, and more. The preview link is publicly accessible.',
+        'single AI-generated .html files, Markdown documents, static site generator outputs, and more. ' +
+        'Choose PUBLIC or Pro PASSWORD access before the deployment is published.',
       inputSchema: z.object({
         path: z
           .string()
@@ -83,16 +84,36 @@ export function registerTools(server: McpServer): void {
           .array(z.string())
           .optional()
           .describe('Additional glob exclude patterns. node_modules, .git, .env etc. are excluded by default.'),
+        visibility: z
+          .enum(['PUBLIC', 'PASSWORD'])
+          .optional()
+          .describe('Access mode applied atomically before publishing. New projects default to PUBLIC when omitted; existing projects keep their access.'),
+        password: z
+          .string()
+          .min(6)
+          .max(100)
+          .optional()
+          .describe('Required when visibility is PASSWORD. Never include passwords in logs or follow-up messages.'),
       }),
     },
-    async ({ path, projectName, excludePatterns }) => {
+    async ({ path, projectName, excludePatterns, visibility, password }) => {
       try {
+        if (visibility === 'PASSWORD' && !password) {
+          throw new Error('password is required when visibility is PASSWORD.');
+        }
+        if (visibility === 'PUBLIC' && password) {
+          throw new Error('Do not provide password when visibility is PUBLIC.');
+        }
         const result = await deploy({
           path: path || undefined,
           projectName: projectName || undefined,
           excludePatterns: excludePatterns || undefined,
           source: 'MCP',
-        } as Parameters<typeof deploy>[0] & { source: 'MCP' });
+          visibility,
+          password,
+        } as Parameters<typeof deploy>[0] & { source: 'MCP'; visibility?: 'PUBLIC' | 'PASSWORD'; password?: string }) as Awaited<ReturnType<typeof deploy>> & {
+          visibility?: 'PUBLIC' | 'PASSWORD' | 'PRIVATE';
+        };
 
         if (result.success) {
           const sizeMb = ((result.zipSizeBytes || 0) / 1024 / 1024).toFixed(1);
@@ -107,8 +128,11 @@ export function registerTools(server: McpServer): void {
                   `Deployment ID: ${result.deploymentId}`,
                   `Files: ${result.fileCount}`,
                   `Size: ${sizeMb} MB`,
+                  `Access: ${result.visibility || visibility || 'PUBLIC/unchanged'}`,
                   '',
-                  'The link is publicly accessible and can be shared with anyone.',
+                  (result.visibility || visibility) === 'PASSWORD'
+                    ? 'Visitors must enter the project password to view this link.'
+                    : 'The link is publicly accessible and can be shared with anyone.',
                 ].join('\n'),
               },
             ],

@@ -66,6 +66,9 @@ For framework projects, deploy the static build output rather than a raw source-
 
 Use these links when listing PreviewShip in extension marketplaces, README files, articles, or community answers:
 
+- [Upload a page now — no Git, domain, or server required](https://previewship.com/try)
+- [Browse product comparisons](https://previewship.com/compare)
+- [Verify product and pricing facts](https://previewship.com/facts)
 - [Share Claude HTML artifacts as live URLs](https://previewship.com/guides/share-claude-html-artifacts)
 - [Netlify Drop alternative for one HTML file or ZIP](https://previewship.com/guides/netlify-drop-alternative-for-html-file)
 - [Upload an HTML file to a website](https://previewship.com/guides/upload-html-file-to-website)
@@ -163,7 +166,8 @@ PreviewShip is a **static file hosting** service and supports:
 
 | Item | Free | Pro Monthly | Pro Yearly |
 |------|------|---------|---------|
-| Price | $0 | $5.40/mo launch price | $50.40/yr launch price |
+| Default price | $0 | $8.10/mo | $75.60/yr |
+| Eligible BR/PT regional price | $0 | $5.40/mo | $50.40/yr |
 | Daily Deploys | 5 | 50 | 80 |
 | Monthly Deploys | 20 | 300 | 500 |
 | Per-Upload Limit | 15MB | 50MB | 80MB |

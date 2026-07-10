@@ -136,8 +136,16 @@ async function cmdDeploy(args: string[]): Promise<number> {
   const deployPath = getPositionalArg(args) || '.';
   const projectName = getArgValue(args, '--name') || getArgValue(args, '-n');
   const extraExcludes = getAllArgValues(args, '--exclude');
+  const publicAccess = args.includes('--public');
+  const password = getArgValue(args, '--password');
 
   try {
+    if (publicAccess && args.includes('--password')) {
+      throw new Error('Use either --public or --password, not both.');
+    }
+    if (args.includes('--password') && !password) {
+      throw new Error('Use --password <6-100 character password>.');
+    }
     if (!json) {
       console.log(c.dim('Packing files...'));
     }
@@ -146,6 +154,8 @@ async function cmdDeploy(args: string[]): Promise<number> {
       path: deployPath,
       projectName: projectName || undefined,
       excludePatterns: extraExcludes.length > 0 ? extraExcludes : undefined,
+      visibility: publicAccess ? 'PUBLIC' : password ? 'PASSWORD' : undefined,
+      password,
     });
 
     if (json) {
@@ -156,6 +166,7 @@ async function cmdDeploy(args: string[]): Promise<number> {
       console.log(c.green('✓') + ' Deployment successful!');
       console.log('');
       console.log(c.bold('Preview URL: ') + c.cyan(result.previewUrl!));
+      console.log(c.bold('Access: ') + (result.visibility || (password ? 'PASSWORD' : publicAccess ? 'PUBLIC' : 'unchanged/default')));
 
       // 尝试复制到剪贴板
       if (!args.includes('--no-clipboard')) {
@@ -436,6 +447,8 @@ ${c.bold('Commands:')}
 ${c.bold('Deploy options:')}
   -n, --name <name>  Project name (default: directory name)
   --exclude <glob>   Additional exclude patterns (repeatable)
+  --public           Publish as public; clears an existing project password
+  --password <pass>  Apply Pro password access before publishing (6-100 chars)
   --json             Output as JSON
   --no-clipboard     Don't copy URL to clipboard
 
@@ -476,7 +489,8 @@ ${c.bold('Documentation:')} ${c.cyan('https://previewship.com/docs')}
 function getArgValue(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);
   if (idx >= 0 && idx + 1 < args.length) {
-    return args[idx + 1];
+    const value = args[idx + 1];
+    return value.startsWith('-') ? undefined : value;
   }
   return undefined;
 }

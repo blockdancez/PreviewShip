@@ -17,7 +17,7 @@ import { ApiError } from './types.js';
 const REQUEST_TIMEOUT_MS = 10_000;
 const UPLOAD_TIMEOUT_MS = 60_000;
 
-const PKG_VERSION = '1.0.0';
+const PKG_VERSION = '1.0.11';
 
 /**
  * PreviewShip HTTP 客户端
@@ -30,12 +30,19 @@ export class ApiClient {
   ) {}
 
   /** POST /v1/deployments — 上传 zip 创建部署 */
-  async createDeployment(projectName: string, zipBuffer: Buffer, source = 'CLI'): Promise<CreateDeploymentResponse> {
+  async createDeployment(
+    projectName: string,
+    zipBuffer: Buffer,
+    source = 'CLI',
+    access?: { visibility?: 'PUBLIC' | 'PASSWORD'; password?: string },
+  ): Promise<CreateDeploymentResponse> {
     const url = `${this.serverUrl}/v1/deployments`;
 
     const formData = new FormData();
     formData.set('projectName', projectName);
     formData.set('source', source);
+    if (access?.visibility) formData.set('visibility', access.visibility);
+    if (access?.password) formData.set('password', access.password);
     formData.set('zip', new Blob([zipBuffer]), 'workspace.zip');
 
     const resp = await this.fetchWithTimeout(url, {
