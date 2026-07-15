@@ -12,7 +12,7 @@
 
 - 单个 PDF 被包装到 `.vercel/output/static/document.pdf`。
 - 后端规范化产物后保留 `document.pdf`，并生成根目录 `index.html` 作为跳转入口。
-- `index.html` 使用零延迟、无 JavaScript 的 `meta refresh` 将顶层页面导航到经过安全编码的 `document.pdf`，同时保留手动打开原文件的降级入口。
+- `index.html` 在 `<head>` 首次绘制前使用受 CSP 哈希约束的固定脚本执行 `location.replace()`，将顶层页面导航到经过安全编码的 `document.pdf`；同时保留 `meta refresh` 和手动打开原文件的双重降级。
 - Vercel 和自托管渠道都消费同一份规范化文件集合，不维护渠道专属模板。
 
 后端是入口页生成和产物优先级的唯一事实来源。新版客户端可以预先包装 PDF，后端也必须兼容直接上传的原始 `.pdf`，从而支持旧客户端升级、浏览器上传和直接 API 调用。
@@ -43,7 +43,9 @@
 - 校验文件开头的 `%PDF-` 签名；不引入 PDF 解析依赖，避免在 Worker 中解析不可信复杂文档。
 - 生成的 HTML 只引用后端选定的相对路径，并进行 HTML 属性和 URL 编码，防止特殊文件名破坏模板。
 - PDF 通过顶层导航打开，不再使用会受浏览器 MIME Handler 与页面 CSP 交互影响的 `<object>` 或 `<iframe>` 内嵌方式。
-- 跳转不依赖 JavaScript，不需要放宽 `script-src`，同一静态产物可以在 Vercel 和自托管渠道复用。
+- 主路径使用固定、无动态代码拼接的抢先导航脚本，并通过精确 SHA-256 CSP 哈希授权，不开放 `unsafe-inline`；JavaScript 被禁用时由 `meta refresh` 接管。
+- 中转页使用与原生 PDF Viewer 接近的深色背景，正常跳转期间不显示文字或按钮；只有跳转超过 1.5 秒仍未完成时才显示手动入口。
+- 同一静态产物可以在 Vercel 和自托管渠道复用，无需新增 Provider 或 Nginx 分支。
 - 自托管 Nginx 已加载标准 MIME 映射、支持静态文件 Range 请求，并且 `/index.pdf` 继续经过现有 `auth_request`，无需复制一套 PDF location。
 - Vercel 静态输出按 `.pdf` 扩展名返回 `application/pdf`，继续使用现有 Build Output 发布链路。
 - HTML/Markdown 旧产物的规范化顺序、Free 品牌注入和错误处理保持不变。
@@ -72,7 +74,7 @@
 ## 异常与降级
 
 - 空文件、伪 PDF 签名、多 PDF 无唯一入口：部署失败并返回可翻译的稳定错误码。
-- 浏览器不支持内联 PDF：由浏览器按自身策略下载或交给外部阅读器；根入口仍提供手动打开 PDF 的降级链接。
+- 浏览器不支持内联 PDF：由浏览器按自身策略下载或交给外部阅读器；根入口在短暂等待后显示手动打开 PDF 的降级链接。
 - PDF 加载失败：保留原生查看器错误反馈；不在前端重复下载或解析文件。
 - Provider 发布失败、密码保护、项目封禁、部署过期和回滚：完全沿用现有状态机。
 
@@ -80,6 +82,7 @@
 
 - 控制台、免注册上传、CLI、MCP 和 VS Code/Cursor 均可部署单个大小写扩展名的 PDF；扩展可从 PDF 编辑器标签或资源管理器菜单部署。
 - 打开固定预览根地址后，地址栏切换到实际 PDF 路径，并由原生查看器全屏打开 PDF。
+- 正常跳转不显示 “Opening” 或 “Open PDF” 中转文案，最多短暂显示与原生 Viewer 一致的深色背景；降级链接仅在跳转异常时延迟出现。
 - 原生 PDF 阅读页没有 PreviewShip 顶部工具栏或悬浮品牌标识。
 - PDF 原文件返回正确 MIME，并支持 Range 请求；密码项目不能绕过鉴权访问 PDF。
 - HTML + PDF、Markdown + PDF 的旧首页行为不变。
