@@ -12,18 +12,13 @@
 !extension/**
 !skills/
 !skills/**
+
+# 仅跟踪稳定的公开用户文档与 SEO 资料；内部设计、计划和草稿保持忽略
 !docs/
-!docs/adr/
-!docs/adr/**
-!docs/superpowers/
-!docs/superpowers/**
 !docs/agent-tool.md
-!docs/agent-skill-distribution.md
-!docs/agent-skill-submissions.md
 !docs/share-codex-chat.md
 !docs/share-claude-code-chat.md
 !docs/directory-submission-kit.md
-!docs/release-notes-2026-07.md
 !examples/
 !examples/hello-previewship/
 !examples/hello-previewship/**
