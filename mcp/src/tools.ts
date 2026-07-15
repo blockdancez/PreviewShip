@@ -210,6 +210,22 @@ export function registerTools(server: McpServer): void {
     async () => {
       try {
         const usage = await getUsage();
+        const policyUsage = usage as typeof usage & {
+          businessLimitsApplied?: boolean;
+          maxUploadMb?: number;
+          concurrentBuilds?: { current: number; limit: number };
+        };
+        if (policyUsage.businessLimitsApplied === false) {
+          return textResult([
+            'PreviewShip Internal Deployment Safety:',
+            '',
+            'Business deployment limits: not applied',
+            policyUsage.maxUploadMb ? `Upload safety limit: ${policyUsage.maxUploadMb} MB` : null,
+            policyUsage.concurrentBuilds
+              ? `Concurrent build safety: ${policyUsage.concurrentBuilds.current}/${policyUsage.concurrentBuilds.limit}`
+              : null,
+          ].filter(Boolean).join('\n'));
+        }
         const d = usage.daily;
         const m = usage.monthly;
         return {
@@ -375,14 +391,25 @@ export function registerTools(server: McpServer): void {
       description: 'List retained project deployments that may be used for rollback. Free accounts see fewer retained versions; Pro accounts see more.',
       inputSchema: z.object({
         projectId: z.number().int().positive().describe('PreviewShip project ID.'),
+        page: z.number().int().min(0).default(0).describe('Page number, starting from 0.'),
+        size: z.number().int().min(1).max(100).default(20).describe('Page size, max 100.'),
       }),
     },
-    async ({ projectId }) => {
+    async ({ projectId, page, size }) => {
       try {
-        const result = await apiRequest<{ projectId: number; latestDeploymentId: number | null; limit: number; versions: ProjectVersion[] }>(
-          `/v1/projects/${projectId}/versions`,
+        const result = await apiRequest<{
+          projectId: number;
+          latestDeploymentId: number | null;
+          limit: number;
+          page: number;
+          size: number;
+          totalElements: number;
+          totalPages: number;
+          versions: ProjectVersion[];
+        }>(
+          `/v1/projects/${projectId}/versions?page=${page}&size=${size}`,
         );
-        return textResult(formatVersions(result.versions, result.limit));
+        return textResult(formatVersions(result));
       } catch (err) {
         return errorResult(err);
       }
@@ -394,7 +421,7 @@ export function registerTools(server: McpServer): void {
     {
       title: 'Rollback Project Version',
       description:
-        'Roll back a fixed PreviewShip project URL to a retained historical deployment. Requires confirmProjectName to prevent accidental changes.',
+        'Queue a new deployment from a retained historical version. Requires confirmProjectName to prevent accidental changes; poll the returned deployment ID until ready.',
       inputSchema: z.object({
         projectId: z.number().int().positive().describe('PreviewShip project ID.'),
         deploymentId: z.number().int().positive().describe('Historical deployment ID to roll back to.'),
@@ -405,14 +432,22 @@ export function registerTools(server: McpServer): void {
       try {
         const project = await apiRequest<ProjectSummary>(`/v1/projects/${projectId}`);
         ensureConfirmed(project, confirmProjectName, 'rollback');
-        const result = await apiRequest<{ rolledBack: boolean; deploymentId: number; previewUrl: string | null }>(
+        const result = await apiRequest<{
+          rolledBack?: boolean;
+          deploymentId: number;
+          status?: string;
+          deploymentSource?: string;
+          previewUrl: string | null;
+        }>(
           `/v1/projects/${projectId}/versions/${deploymentId}/rollback`,
           { method: 'POST' },
         );
         return textResult([
-          result.rolledBack ? 'Rollback completed.' : 'Deployment is already current.',
-          `Deployment ID: ${result.deploymentId}`,
-          result.previewUrl ? `Preview URL: ${result.previewUrl}` : null,
+          result.status === 'QUEUED' || result.rolledBack
+            ? 'Rollback deployment queued.'
+            : 'Rollback request was not queued.',
+          `New deployment ID: ${result.deploymentId}`,
+          `Source deployment ID: ${deploymentId}`,
         ].filter(Boolean).join('\n'));
       } catch (err) {
         return errorResult(err);
@@ -558,13 +593,18 @@ function formatAccess(access: ProjectAccess): string {
   ].filter(Boolean).join('\n');
 }
 
-function formatVersions(versions: ProjectVersion[], limit: number): string {
-  if (versions.length === 0) {
-    return `No versions found. Retention limit: ${limit}`;
+function formatVersions(result: {
+  versions: ProjectVersion[];
+  page: number;
+  totalElements: number;
+  totalPages: number;
+}): string {
+  if (result.versions.length === 0) {
+    return `No versions found on page ${result.page + 1}. Total versions: ${result.totalElements}`;
   }
   return [
-    `Versions shown: ${versions.length}/${limit}`,
-    ...versions.map(version => [
+    `Page ${result.page + 1}/${Math.max(1, result.totalPages)} · total versions: ${result.totalElements}`,
+    ...result.versions.map(version => [
       `#${version.deploymentId} ${version.status}`,
       `  ${[
         version.current ? 'current' : null,

@@ -123,7 +123,7 @@ For zipped uploads or directory deploys, deploy the static build artifact, not t
 | `previewship deploy [path] [-n name] [--json]` | Deploy a directory, single HTML, Markdown, or PDF document and get a preview URL |
 | `previewship status <id> [--json]` | Check deployment status by ID |
 | `previewship deployments list [--status READY] [--days 30]` | List deployment history and rollback availability |
-| `previewship projects list|get|delete|redeploy|access|versions|rollback` | Manage projects, public/password access, retained versions, rollback, and expired-link recovery |
+| `previewship projects list|get|delete|redeploy|access|versions|rollback` | Manage projects, public/password access, paginated retained versions, asynchronous rollback, and expired-link recovery |
 | `previewship usage [--json]` | Show remaining deployment quota |
 | `previewship whoami` | Display current configuration |
 
@@ -291,7 +291,7 @@ The skill reads Claude Code JSONL sessions from `~/.claude/projects`, renders vi
 | `show_usage` | Show remaining deployment quota | — |
 | `list_projects`, `get_project` | Inspect fixed preview URLs, project status, access mode, and redeploy state | `projectId` for detail |
 | `set_project_access`, `get_project_access` | Set public/password access; `PUBLIC` clears an existing password | `projectId`, `visibility`, `password` for password mode |
-| `list_project_versions`, `rollback_project_version` | List retained versions and roll back a fixed URL to a historical deployment | `projectId`, `deploymentId`, `confirmProjectName` |
+| `list_project_versions`, `rollback_project_version` | Page through retained versions and queue a new deployment from a historical version | `projectId`, `page`, `size`, `deploymentId`, `confirmProjectName` |
 | `redeploy_project_latest` | Restore an expired fixed preview link from the latest retained artifact | `projectId` |
 | `delete_project` | Delete a project and its fixed preview URL; requires exact project-name confirmation | `projectId`, `confirmProjectName` |
 | `list_deployments` | List deployment history, sources, current marker, and rollback availability | `status`, `query`, `days`, `page`, `size` |

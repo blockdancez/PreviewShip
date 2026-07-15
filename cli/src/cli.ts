@@ -248,6 +248,14 @@ async function cmdUsage(args: string[]): Promise<number> {
     const usage = await getUsage();
     if (json) {
       console.log(JSON.stringify({ success: true, ...usage }, null, 2));
+    } else if (usage.businessLimitsApplied === false) {
+      console.log('Business deployment limits: not applied');
+      if (usage.maxUploadMb) {
+        console.log(`Upload safety limit:        ${usage.maxUploadMb} MB`);
+      }
+      if (usage.concurrentBuilds) {
+        console.log(`Concurrent build safety:    ${usage.concurrentBuilds.current}/${usage.concurrentBuilds.limit}`);
+      }
     } else {
       const d = usage.daily;
       const m = usage.monthly;
@@ -330,12 +338,14 @@ async function cmdProjects(args: string[]): Promise<number> {
         return EXIT_SUCCESS;
       }
       case 'versions': {
-        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects versions <project-id>');
-        const result = await listProjectVersions(projectId);
+        const projectId = requiredNumber(subArgs[0], 'Usage: previewship projects versions <project-id> [--page <n>] [--size <n>]');
+        const page = optionalNumber(getArgValue(subArgs, '--page')) ?? 0;
+        const size = optionalNumber(getArgValue(subArgs, '--size')) ?? 20;
+        const result = await listProjectVersions(projectId, page, size);
         if (json) {
           console.log(JSON.stringify({ success: true, ...result }, null, 2));
         } else {
-          console.log(`Project #${result.projectId} versions (limit ${result.limit})`);
+          console.log(`Project #${result.projectId} versions (page ${result.page + 1}/${Math.max(1, result.totalPages)}, total ${result.totalElements})`);
           printVersions(result.versions);
         }
         return EXIT_SUCCESS;
@@ -348,13 +358,10 @@ async function cmdProjects(args: string[]): Promise<number> {
         const result = await rollbackProjectVersion(projectId, deploymentId);
         if (json) {
           console.log(JSON.stringify({ success: true, ...result }, null, 2));
-        } else if (result.rolledBack) {
-          console.log(c.green('✓') + ` Rolled back ${project.name} to deployment #${deploymentId}.`);
-          if (result.previewUrl) {
-            console.log(`Preview URL: ${c.cyan(result.previewUrl)}`);
-          }
+        } else if (result.status === 'QUEUED' || result.rolledBack) {
+          console.log(c.green('✓') + ` Rollback deployment #${result.deploymentId} queued for ${project.name} from deployment #${deploymentId}.`);
         } else {
-          console.log(c.dim(`Deployment #${deploymentId} is already current.`));
+          console.log(c.dim(`Rollback request for deployment #${deploymentId} was not queued.`));
         }
         return EXIT_SUCCESS;
       }
@@ -433,10 +440,10 @@ ${c.bold('Commands:')}
   projects get <id>  Show project details
   projects access <id> [--public | --password <password>]
                      Show or update project access
-  projects versions <id>
-                     List rollbackable project versions
+  projects versions <id> [--page <n>] [--size <n>]
+                     List rollbackable project versions with pagination
   projects rollback <project-id> <deployment-id> --confirm <project-name>
-                     Roll back the fixed project URL to a retained deployment
+                     Queue a rollback deployment from a retained version
   projects redeploy <id>
                      Redeploy from the latest retained artifact
   projects delete <id> --confirm <project-name>

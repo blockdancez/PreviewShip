@@ -143,8 +143,8 @@ export class ApiClient {
   }
 
   /** GET /v1/projects/{id}/versions — 查询版本历史 */
-  async listProjectVersions(id: number): Promise<ProjectVersionsResponse> {
-    const url = `${this.serverUrl}/v1/projects/${id}/versions`;
+  async listProjectVersions(id: number, page = 0, size = 20): Promise<ProjectVersionsResponse> {
+    const url = this.withQuery(`/v1/projects/${id}/versions`, { page, size });
     const resp = await this.fetchWithTimeout(url, {
       headers: { ...this.authHeaders() },
     });

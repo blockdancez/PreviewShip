@@ -1,7 +1,7 @@
 # PreviewShip 内部部署账号实施计划
 
 - 日期：2026-07-15
-- 状态：待实施
+- 状态：代码已实施，待生产迁移与端到端验收
 - 前置设计：[内部部署账号设计](./2026-07-15-internal-deployment-account-design.md)
 - 架构决定：[ADR-0002](../adr/0002-internal-deployments-share-core-by-account-type.md)
 

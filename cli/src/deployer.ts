@@ -201,9 +201,9 @@ export async function updateProjectAccess(projectId: number, update: ProjectAcce
 }
 
 /** 查询项目版本历史 */
-export async function listProjectVersions(projectId: number): Promise<ProjectVersionsResponse> {
+export async function listProjectVersions(projectId: number, page = 0, size = 20): Promise<ProjectVersionsResponse> {
   const client = createClient();
-  return client.listProjectVersions(projectId);
+  return client.listProjectVersions(projectId, page, size);
 }
 
 /** 回滚项目版本 */

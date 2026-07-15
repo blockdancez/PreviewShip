@@ -108,13 +108,19 @@ export interface ProjectVersionsResponse {
   projectId: number;
   latestDeploymentId: number | null;
   limit: number;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
   versions: ProjectVersion[];
 }
 
 export interface RollbackProjectVersionResponse {
-  rolledBack: boolean;
+  rolledBack?: boolean;
   deploymentId: number;
   previewUrl: string | null;
+  status?: DeploymentStatus;
+  deploymentSource?: string;
 }
 
 export interface RedeployLatestResponse {
@@ -135,6 +141,8 @@ export interface QuotaInfo {
 // GET /v1/usage 响应
 export interface UsageResponse {
   plan?: string;
+  businessLimitsApplied?: boolean;
+  maxUploadMb?: number;
   daily: QuotaInfo;
   monthly: QuotaInfo;
   monthlyUpload?: {

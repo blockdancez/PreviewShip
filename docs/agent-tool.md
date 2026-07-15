@@ -281,8 +281,8 @@ CLI 也提供项目管理能力，供人类、脚本和终端 Agent 使用。
 | `previewship projects access <project-id>` | 查看访问控制 | 只展示公开/密码访问 |
 | `previewship projects access <project-id> --password <password>` | 设置密码访问 | Pro 能力 |
 | `previewship projects access <project-id> --public` | 切回公开访问 | 会清除已有项目密码 |
-| `previewship projects versions <project-id>` | 查看版本历史 | Free 3 个，Pro Monthly 10 个，Pro Yearly 40 个 |
-| `previewship projects rollback <project-id> <deployment-id> --confirm <project-name>` | 回滚固定链接 latest 指针 | 需要项目名确认，不创建新部署记录 |
+| `previewship projects versions <project-id> [--page <n>] [--size <n>]` | 分页查看版本历史 | 默认 20、最大 100；普通账号仍受可见历史策略限制 |
+| `previewship projects rollback <project-id> <deployment-id> --confirm <project-name>` | 从保留版本创建新的回滚部署 | 需要项目名确认；返回新 deployment ID 后继续轮询 |
 | `previewship projects redeploy <project-id>` | 使用 latest retained artifact 重新部署 | 用于恢复过期固定链接 |
 | `previewship projects delete <project-id> --confirm <project-name>` | 删除项目 | 删除固定链接、托管项目和 Showcase，且不可恢复 |
 
@@ -539,13 +539,15 @@ Agent 调用 CLI 时，删除和回滚必须显式传 `--confirm <project-name>`
 
 #### Tool: `list_project_versions`
 
-列出项目版本历史和可回滚状态。
+分页列出项目版本历史和可回滚状态。
 
 **输入参数：**
 
 ```json
 {
-  "projectId": 42
+  "projectId": 42,
+  "page": 0,
+  "size": 20
 }
 ```
 
@@ -553,7 +555,7 @@ Agent 调用 CLI 时，删除和回滚必须显式传 `--confirm <project-name>`
 
 #### Tool: `rollback_project_version`
 
-将固定项目链接回滚到某个 retained 历史部署。回滚只切换 latest 指针，不创建新部署记录。
+从某个 retained 版本创建新的异步回滚部署。来源记录保持不变；工具返回新 deployment ID 后应继续查询部署状态。
 
 **输入参数：**
 
@@ -765,8 +767,8 @@ file: (binary zip data)
 | `POST /v1/projects/{id}/redeploy-latest` | 过期链接恢复 | `projects redeploy` / `redeploy_project_latest` |
 | `GET /v1/projects/{id}/access` | 查询访问控制 | `projects access` / `get_project_access` |
 | `PATCH /v1/projects/{id}/access` | 设置公开/密码访问 | `projects access --public/--password` / `set_project_access` |
-| `GET /v1/projects/{id}/versions` | 版本历史 | `projects versions` / `list_project_versions` |
-| `POST /v1/projects/{id}/versions/{deploymentId}/rollback` | 回滚 fixed URL latest 指针 | `projects rollback` / `rollback_project_version` |
+| `GET /v1/projects/{id}/versions?page=0&size=20` | 分页版本历史 | `projects versions` / `list_project_versions` |
+| `POST /v1/projects/{id}/versions/{deploymentId}/rollback` | 创建异步回滚部署并返回新 deployment ID | `projects rollback` / `rollback_project_version` |
 
 破坏性或高影响操作的确认策略：
 

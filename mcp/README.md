@@ -188,11 +188,11 @@ Set project access to `PUBLIC` or `PASSWORD`. `PUBLIC` clears an existing projec
 
 ### `list_project_versions`
 
-List retained project versions that can be used for rollback. Free accounts show fewer retained versions; Pro accounts keep more history.
+List retained project versions that can be used for rollback, with `page` and `size` pagination. Free accounts show fewer retained versions; Pro accounts keep more history.
 
 ### `rollback_project_version`
 
-Roll back a fixed project URL to a retained historical deployment. This tool requires `confirmProjectName` to exactly match the project name before rollback.
+Queue a new deployment from a retained historical version. The source record remains unchanged. This tool requires `confirmProjectName` to exactly match the project name; poll the returned deployment ID until it becomes ready.
 
 ### `list_deployments`
 

@@ -175,17 +175,17 @@ previewship projects access 42 --public
 
 Password access is a Pro capability. Public projects can be indexed and shared to Showcase; password-protected projects are excluded from Showcase and sitemap.
 
-### `previewship projects versions <project-id>`
+### `previewship projects versions <project-id> [--page <n>] [--size <n>]`
 
 List retained project versions that can be used for rollback.
 
 ```bash
-previewship projects versions 42
+previewship projects versions 42 --page 0 --size 20
 ```
 
 ### `previewship projects rollback <project-id> <deployment-id>`
 
-Roll the fixed project URL back to a retained deployment. Rollback switches the project `latest` pointer; it does not create a new deployment record.
+Queue a new deployment from a retained version. The source deployment remains unchanged; poll the returned deployment ID until it becomes ready.
 
 ```bash
 previewship projects rollback 42 105 --confirm my-project
