@@ -1,12 +1,12 @@
 # PreviewShip CLI
 
-> Publish HTML online, host HTML files, deploy React/Vue/Vite/Next build output, and publish Markdown from the terminal to fixed PreviewShip preview URLs.
+> Publish HTML, Markdown, PDF, and React/Vue/Vite/Next build output from the terminal to fixed PreviewShip preview URLs.
 
-PreviewShip CLI publishes browser-ready frontend artifacts to shareable preview links. Use it to deploy a `dist`, `build`, `out`, or `public` folder, upload a single `.html` file, publish Markdown as a readable web page, or let an AI coding agent return a live URL from a scriptable command.
+PreviewShip CLI publishes browser-ready frontend artifacts and documents to shareable preview links. Use it to deploy a `dist`, `build`, `out`, or `public` folder, upload a single HTML file, publish Markdown as a readable web page, open a PDF full screen, or let an AI coding agent return a live URL from a scriptable command.
 
 It is built for frontend review workflows, AI-generated HTML previews, Claude/Cursor/Codex agent handoffs, client approval links, QA links, and static build sharing without Git or CI/CD setup.
 
-Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a 24-hour temporary frontend build, HTML, or Markdown preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
+Need to try before configuring an API key? Use the browser flow at <https://previewship.com/try> to create a 24-hour temporary frontend build, HTML, Markdown, or PDF preview link, then sign up to claim the same fixed project URL. The CLI remains the repeatable path once you have an API key.
 
 For Codex and Claude Code users, PreviewShip also ships installable skills that turn coding conversations into high-fidelity share pages and deploy them with this CLI:
 
@@ -31,12 +31,13 @@ npx skills add blockdancez/PreviewShip --skill share-claude-code-chat -a codex -
 # 2. Set your API Key
 npx previewship login
 
-# 3. Deploy browser-ready output, a single HTML file, or Markdown
+# 3. Deploy browser-ready output, a single HTML, Markdown, or PDF file
 npx previewship deploy ./dist
 npx previewship deploy ./build
 npx previewship deploy ./out
 npx previewship deploy ./report.html
 npx previewship deploy ./README.md
+npx previewship deploy ./report.pdf
 ```
 
 Important: deploy static build output, not a raw source-code folder. For React, Vue, Vite, Next static export, Astro, Svelte, or similar framework projects, run the build command first and deploy `dist`, `build`, `out`, `public`, or the generated static folder that contains `index.html` and assets.
@@ -59,6 +60,7 @@ Important: deploy static build output, not a raw source-code folder. For React, 
 | Next.js static export | Yes | Deploy the exported static folder after build/export |
 | Single `.html` file | Yes | Packaged as `index.html` automatically |
 | Markdown `.md` / `.markdown` file | Yes | Rendered through a generated viewer page |
+| PDF `.pdf` file | Yes | Displayed full screen through the browser's native PDF viewer |
 | Raw source folder with `package.json` and `src/` | No | Build first, then deploy the generated output |
 | `node_modules` or dependency folders | No | Excluded by default and should not be uploaded |
 
@@ -104,13 +106,14 @@ previewship login --key ps_live_xxx  # Non-interactive (CI/Agent)
 
 ### `previewship deploy [path]`
 
-Deploy a directory, single HTML file, or Markdown file to preview.
+Deploy a directory, single HTML, Markdown, or PDF file to preview.
 
 ```bash
 previewship deploy                   # Deploy current directory
 previewship deploy ./dist            # Deploy specific directory
 previewship deploy ./report.html     # Deploy a single HTML file as index.html
 previewship deploy ./README.md       # Render Markdown and deploy it as index.html
+previewship deploy ./report.pdf      # Open a PDF full screen with the native viewer
 previewship deploy -n my-project     # Set project name
 previewship deploy ./dist --public   # Publish as public
 previewship deploy ./dist --password "review-pass" # Apply Pro password access before publish
@@ -291,9 +294,9 @@ Yes. Run `previewship projects list`, then `previewship projects delete <project
 
 Yes. Agents should call `previewship deploy <path> --json` so they can parse the deployment ID, status, and preview URL.
 
-### Can I publish one HTML or Markdown file without a zip?
+### Can I publish one HTML, Markdown, or PDF file without a zip?
 
-Yes. A single `.html`, `.md`, or `.markdown` file can be deployed directly.
+Yes. A single `.html`, `.md`, `.markdown`, or `.pdf` file can be deployed directly.
 
 ## Plans
 

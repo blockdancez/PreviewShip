@@ -426,7 +426,7 @@ ${c.bold('Usage:')}
 
 ${c.bold('Commands:')}
   login              Set your API Key
-  deploy [path]      Deploy a directory, single HTML file, or Markdown file to preview
+  deploy [path]      Deploy a directory, single HTML, Markdown, or PDF file to preview
   status <id>        Check deployment status
   deployments list   List deployment history
   projects list      List projects
@@ -479,6 +479,7 @@ ${c.bold('Get started:')}
   3. previewship deploy ./dist
      or previewship deploy ./report.html
      or previewship deploy ./README.md
+     or previewship deploy ./document.pdf
 
 ${c.bold('Documentation:')} ${c.cyan('https://previewship.com/docs')}
 `.trim();

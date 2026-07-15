@@ -6,18 +6,18 @@ import { ApiClient } from './api-client';
 import { StatusBar } from './status-bar';
 import { ApiError } from './types';
 import { showApiError } from './errors';
-import { packHtmlFile, packMarkdownFile, packWorkspace } from './zipper';
+import { packHtmlFile, packMarkdownFile, packPdfFile, packWorkspace } from './zipper';
 
 /** 常见构建产物目录，按优先级排列 */
 const BUILD_OUTPUT_DIRS = ['dist', 'build', 'out', '.output'];
 
 interface ExecuteDeployOptions {
-  activeHtmlOnly?: boolean;
+  activeFileOnly?: boolean;
   targetUri?: vscode.Uri;
 }
 
-type DeployKind = 'directory' | 'html' | 'markdown';
-type DeployableFileKind = 'html' | 'markdown';
+type DeployKind = 'directory' | 'html' | 'markdown' | 'pdf';
+type DeployableFileKind = 'html' | 'markdown' | 'pdf';
 
 function isHtmlFile(filePath: string): boolean {
   return /\.html?$/i.test(filePath);
@@ -27,10 +27,21 @@ function isMarkdownFile(filePath: string): boolean {
   return /\.(md|markdown)$/i.test(filePath);
 }
 
+function isPdfFile(filePath: string): boolean {
+  return /\.pdf$/i.test(filePath);
+}
+
 function getFileKind(filePath: string): DeployableFileKind | null {
   if (isHtmlFile(filePath)) return 'html';
   if (isMarkdownFile(filePath)) return 'markdown';
+  if (isPdfFile(filePath)) return 'pdf';
   return null;
+}
+
+function fileKindLabel(kind: DeployableFileKind | null): string {
+  if (kind === 'markdown') return 'Markdown';
+  if (kind === 'pdf') return 'PDF';
+  return 'HTML';
 }
 
 function getActiveDeployableDocument(): vscode.TextDocument | null {
@@ -59,6 +70,13 @@ function getDeployableDocumentByPath(filePath: string): vscode.TextDocument | nu
 function getDeployablePathFromUri(uri?: vscode.Uri): string | null {
   if (!uri || uri.scheme !== 'file') return null;
   return getFileKind(uri.fsPath) ? uri.fsPath : null;
+}
+
+function getActiveTabDeployablePath(): string | null {
+  const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+  if (!input || typeof input !== 'object' || !('uri' in input)) return null;
+  const uri = (input as { uri?: vscode.Uri }).uri;
+  return getDeployablePathFromUri(uri);
 }
 
 function findRootDeployableFiles(workspacePath: string): string[] {
@@ -231,18 +249,18 @@ export async function executeDeploy(
   const workspacePath = workspaceFolder?.uri.fsPath;
   const targetFilePath = getDeployablePathFromUri(options.targetUri);
   const activeFileDocument = targetFilePath ? getDeployableDocumentByPath(targetFilePath) : getActiveDeployableDocument();
-  const activeFilePath = targetFilePath ?? activeFileDocument?.uri.fsPath ?? null;
+  const activeFilePath = targetFilePath ?? activeFileDocument?.uri.fsPath ?? getActiveTabDeployablePath();
   let deployKind: DeployKind = 'directory';
   let deployPath = workspacePath ?? '';
 
-  if (options.activeHtmlOnly) {
+  if (options.activeFileOnly) {
     if (!activeFilePath) {
       const deployableFiles = workspacePath ? findRootDeployableFiles(workspacePath) : [];
       if (deployableFiles.length === 1) {
         deployKind = getFileKind(deployableFiles[0]) ?? 'html';
         deployPath = deployableFiles[0];
       } else {
-        vscode.window.showErrorMessage('Open or select a saved HTML or Markdown file before running this command.');
+        vscode.window.showErrorMessage('Open or select a saved HTML, Markdown, or PDF file before running this command.');
         return;
       }
     } else {
@@ -251,13 +269,13 @@ export async function executeDeploy(
     }
   } else if (!workspacePath) {
     if (!activeFilePath) {
-      vscode.window.showErrorMessage('Please open a workspace or a saved HTML/Markdown file first.');
+      vscode.window.showErrorMessage('Please open a workspace or a saved HTML/Markdown/PDF file first.');
       return;
     }
     deployKind = getFileKind(activeFilePath) ?? 'html';
     deployPath = activeFilePath;
   } else if (activeFilePath) {
-    const activeKind = getFileKind(activeFilePath) === 'markdown' ? 'Markdown' : 'HTML';
+    const activeKind = fileKindLabel(getFileKind(activeFilePath));
     const action = await vscode.window.showInformationMessage(
       `Deploy active ${activeKind} file "${path.basename(activeFilePath)}" or the workspace?`,
       `Deploy ${activeKind} File`,
@@ -369,7 +387,9 @@ export async function executeDeploy(
           ? await packHtmlFile(deployPath)
           : deployKind === 'markdown'
             ? await packMarkdownFile(deployPath)
-          : await packWorkspace(deployPath, excludePatterns);
+            : deployKind === 'pdf'
+              ? await packPdfFile(deployPath)
+              : await packWorkspace(deployPath, excludePatterns);
         const sizeMb = (zipBuffer.length / 1024 / 1024).toFixed(1);
 
         if (token.isCancellationRequested) return;

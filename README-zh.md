@@ -1,10 +1,10 @@
 # PreviewShip
 
-> 从编辑器、终端、AI 智能体或浏览器部署 React/Vue/Vite/Next 构建产物、HTML 文件和 Markdown 文档，并获得固定预览链接。
+> 从编辑器、终端、AI 智能体或浏览器部署 React/Vue/Vite/Next 构建产物、HTML、Markdown 和 PDF 文档，并获得固定预览链接。
 
-PreviewShip 是面向开发者和 AI 辅助开发工作流的前端预览部署平台。你可以上传 `dist`、`build`、`out`、`public` 等浏览器可直接打开的构建产物，发布单个 `.html` 或 Markdown 文件，粘贴 AI 生成的 HTML，或让 AI 编程智能体部署静态产物并返回可分享的 PreviewShip URL。
+PreviewShip 是面向开发者和 AI 辅助开发工作流的前端预览部署平台。你可以上传 `dist`、`build`、`out`、`public` 等浏览器可直接打开的构建产物，发布单个 HTML、Markdown 或 PDF 文件，粘贴 AI 生成的 HTML，或让 AI 编程智能体部署静态产物并返回可分享的 PreviewShip URL。
 
-PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelte、Angular、Nuxt 等项目需要先 build，再部署包含 `index.html` 的静态输出目录或 zip；单个 HTML 和 Markdown 文件可以直接发布。
+PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelte、Angular、Nuxt 等项目需要先 build，再部署包含 `index.html` 的静态输出目录或 zip；单个 HTML、Markdown 和 PDF 文件可以直接发布。
 
 ## 如何描述 PreviewShip
 
@@ -27,7 +27,7 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 
 | 方式 | 命令 / 操作 | 适用场景 |
 |------|------------|---------|
-| VS Code / Cursor 扩展 | 命令面板 → `PreviewShip: Deploy` | 编辑器内一键部署构建目录或 HTML/Markdown |
+| VS Code / Cursor 扩展 | 命令面板 → `PreviewShip: Deploy` | 编辑器内一键部署构建目录或 HTML/Markdown/PDF |
 | CLI | `npx previewship deploy ./dist` | 终端、脚本、CI/CD、前端构建产物 |
 | MCP Server | AI 对话中说“先构建，再把 dist 部署到 PreviewShip” | Claude Code / Cursor / Windsurf |
 | Agent Skill | `$share-codex-chat` / `$share-claude-code-chat` | 将 Codex 或 Claude Code 会话发布成可分享的高保真聊天页 |
@@ -41,7 +41,10 @@ PreviewShip 不是源码构建平台。React、Vue、Vite、Next、Astro、Svelt
 | Next.js 静态导出 | 支持 | 部署导出的静态目录 |
 | 单个 `.html` 文件 | 支持 | 自动作为 `index.html` 发布 |
 | Markdown `.md` / `.markdown` 文件 | 支持 | 通过生成的 Markdown viewer 发布 |
+| PDF `.pdf` 文件 | 支持 | 使用浏览器原生 PDF 阅读器全屏打开；缩放、搜索、打印和下载取决于浏览器支持 |
 | 包含 `package.json`、`src/`、`node_modules` 的源码目录 | 不支持 | 请先 build，再部署生成的静态产物 |
+
+PDF 入口选择会保持现有站点行为：HTML 优先于 Markdown，Markdown 优先于 PDF。只有一个 PDF 时会自动生成全屏入口；如果压缩包内有多个 PDF 且没有 HTML 或 Markdown，请把根入口命名为 `index.pdf`，或只上传一个 PDF。
 
 ## HTML 发布与托管指南
 

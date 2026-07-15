@@ -1,7 +1,7 @@
 {
   "name": "previewship",
-  "version": "1.0.11",
-  "description": "Publish HTML online, host HTML files, and deploy React/Vue/Vite/Next build output to fixed PreviewShip preview URLs from the CLI.",
+  "version": "1.0.12",
+  "description": "Publish HTML, Markdown, PDF, and React/Vue/Vite/Next build output to fixed PreviewShip preview URLs from the CLI.",
   "keywords": [
     "deploy",
     "preview",
@@ -17,6 +17,7 @@
     "nextjs",
     "html",
     "markdown",
+    "pdf",
     "html-to-link",
     "html-to-url",
     "publish-html-online",

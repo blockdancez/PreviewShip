@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { ApiClient } from './api-client.js';
 import { getApiKey, getServerUrl } from './config.js';
-import { packDirectory, packHtmlFile, packMarkdownFile, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
+import { packDirectory, packHtmlFile, packMarkdownFile, packPdfFile, hasPdfSignature, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
 import { ApiError } from './types.js';
 import type {
   DeployOptions,
@@ -36,7 +36,7 @@ function createClient(): ApiClient {
   return new ApiClient(getServerUrl(), apiKey);
 }
 
-/** 部署目录、单个 HTML 文件或单个 Markdown 文件（核心函数，供 CLI 和 MCP 调用） */
+/** 部署目录、单个 HTML、Markdown 或 PDF 文件（核心函数，供 CLI 和 MCP 调用） */
 export async function deploy(options: DeployOptions = {}): Promise<DeployResult> {
   const client = createClient();
 
@@ -65,10 +65,17 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   const stat = fs.statSync(deployPath);
   const isHtmlFile = stat.isFile() && /\.html?$/i.test(deployPath);
   const isMarkdownFile = stat.isFile() && /\.(md|markdown)$/i.test(deployPath);
-  if (!stat.isDirectory() && !isHtmlFile && !isMarkdownFile) {
+  const isPdfFile = stat.isFile() && /\.pdf$/i.test(deployPath);
+  if (!stat.isDirectory() && !isHtmlFile && !isMarkdownFile && !isPdfFile) {
     return {
       success: false,
-      error: { code: 'INVALID_PATH', message: `Deploy path must be a directory, a .html file, or a .md file: ${deployPath}` },
+      error: { code: 'INVALID_PATH', message: `Deploy path must be a directory, a .html file, a .md file, or a .pdf file: ${deployPath}` },
+    };
+  }
+  if (isPdfFile && !hasPdfSignature(deployPath)) {
+    return {
+      success: false,
+      error: { code: 'INVALID_PDF_FILE', message: `PDF file is invalid or corrupted: ${deployPath}` },
     };
   }
 
@@ -88,11 +95,14 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   }
 
   // 打包
-  const { buffer: zipBuffer, fileCount } = isHtmlFile
+  const packed = isHtmlFile
     ? await packHtmlFile(deployPath)
     : isMarkdownFile
       ? await packMarkdownFile(deployPath)
-      : await packDirectory(deployPath, [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])]);
+      : isPdfFile
+        ? await packPdfFile(deployPath)
+        : await packDirectory(deployPath, [...DEFAULT_EXCLUDE_PATTERNS, ...(options.excludePatterns || [])]);
+  const { buffer: zipBuffer, fileCount } = packed;
 
   if (zipBuffer.length === 0 || fileCount === 0) {
     return {

@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- 支持直接部署单个 PDF，并通过浏览器原生阅读器全屏预览
+- 支持从 PDF 编辑器标签和资源管理器右键菜单部署 PDF
 - `PreviewShip: Deploy Active HTML File` 命令 — 将当前打开的 `.html` 文件作为 `index.html` 打包并部署
 - `PreviewShip: Deploy Workspace or HTML File` 命令 — 在当前编辑器为 HTML 文件时，可选择部署单个 HTML 或整个工作区
 

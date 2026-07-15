@@ -5,6 +5,8 @@ import { PassThrough } from 'node:stream';
 const BUILD_OUTPUT_CONFIG_PATH = '.vercel/output/config.json';
 const STATIC_HTML_INDEX_PATH = '.vercel/output/static/index.html';
 const STATIC_MARKDOWN_INDEX_PATH = '.vercel/output/static/index.md';
+const STATIC_PDF_PATH = '.vercel/output/static/document.pdf';
+const PDF_SIGNATURE = Buffer.from('%PDF-', 'ascii');
 
 /**
  * 将工作区目录打包为 zip Buffer
@@ -53,6 +55,25 @@ export function packHtmlFile(filePath: string): Promise<Buffer> {
  */
 export function packMarkdownFile(filePath: string): Promise<Buffer> {
   return packSingleFile(filePath, STATIC_MARKDOWN_INDEX_PATH);
+}
+
+/** 将单个 PDF 文件打包为由后端生成全屏入口的静态站点。 */
+export function packPdfFile(filePath: string): Promise<Buffer> {
+  validatePdfSignature(filePath);
+  return packSingleFile(filePath, STATIC_PDF_PATH);
+}
+
+function validatePdfSignature(filePath: string): void {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const header = Buffer.alloc(1024);
+    const bytesRead = fs.readSync(fd, header, 0, header.length, 0);
+    if (header.subarray(0, bytesRead).indexOf(PDF_SIGNATURE) < 0) {
+      throw new Error(`PDF file is invalid or corrupted: ${filePath}`);
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function packSingleFile(filePath: string, staticPath: string): Promise<Buffer> {

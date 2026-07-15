@@ -1,8 +1,8 @@
 # PreviewShip - VS Code / Cursor Extension
 
-> Publish HTML online, host HTML files, deploy React/Vue/Vite/Next build output, and publish Markdown from VS Code or Cursor to fixed PreviewShip preview URLs.
+> Publish HTML, Markdown, PDF, and React/Vue/Vite/Next build output from VS Code or Cursor to fixed PreviewShip preview URLs.
 
-PreviewShip lets you publish browser-ready frontend artifacts from your editor: deploy a workspace build folder, upload the active `.html` file, publish Markdown as a web page, or share AI-generated HTML from Cursor, VS Code, Claude, Codex, and other coding workflows.
+PreviewShip lets you publish browser-ready frontend artifacts and documents from your editor: deploy a workspace build folder, upload active HTML, publish Markdown as a web page, open PDF full screen, or share AI-generated HTML from Cursor, VS Code, Claude, Codex, and other coding workflows.
 
 Use it when you need a quick review link for a React/Vue/Vite build, Next static export, HTML report, Markdown spec, dashboard, prototype, or AI-generated page without setting up Git, CI/CD, staging, or production hosting.
 
@@ -12,9 +12,9 @@ Compatible with Cursor, VS Code, and all VS Code-based editors.
 
 ## Features
 
-- **One-click Deployment**: Execute a command to package and upload the current workspace, build-output folder, or active `.html`/Markdown file, automatically deploying to PreviewShip.
+- **One-click Deployment**: Execute a command to package and upload the current workspace, build-output folder, or active HTML/Markdown/PDF file, automatically deploying to PreviewShip.
 - **Framework Build Output**: Deploy React `build/`, Vue/Vite `dist/`, Next static export `out/`, Astro/Svelte output, or any static folder with `index.html`.
-- **Single HTML/Markdown Publishing**: Deploy AI-generated HTML reports, Markdown notes, dashboards, prototypes, or artifacts directly from the active editor tab.
+- **Single-file Publishing**: Deploy HTML reports, Markdown notes, and PDF documents directly from the active editor tab or Explorer context menu.
 - **Markdown Publishing**: Deploy README files, notes, reports, and documentation as readable web pages.
 - **Instant Sharing**: The preview link is automatically copied to the clipboard after a successful deployment.
 - **Status Bar Progress**: Real-time display of packaging, uploading, and deployment status.
@@ -52,13 +52,13 @@ Search for `PreviewShip` in the editor extension panel to install.
 ### 3. Deploy
 
 1. Open the project folder or build-output folder you want to deploy.
-2. Execute `PreviewShip: Deploy Workspace, HTML, or Markdown File` in the command palette.
-3. If the active editor is an `.html` or Markdown file, choose whether to deploy that file or the workspace.
-4. Enter the project name (defaults to the folder name, HTML filename, or Markdown filename). PreviewShip automatically creates a deployment-safe hosting slug.
+2. Execute `PreviewShip: Deploy Workspace, HTML, Markdown, or PDF File` in the command palette.
+3. If the active editor is a supported file, choose whether to deploy that file or the workspace.
+4. Enter the project name (defaults to the folder or file name). PreviewShip automatically creates a deployment-safe hosting slug.
 5. Wait for packaging, uploading, and deployment processing to complete.
 6. The preview link is automatically copied to the clipboard!
 
-To publish a single HTML or Markdown file directly, open the file and run `PreviewShip: Deploy Active HTML or Markdown File`.
+To publish a single HTML, Markdown, or PDF file directly, open the file and run `PreviewShip: Deploy Active HTML, Markdown, or PDF File`. PDF is also available from the Explorer context menu.
 
 For framework projects, deploy the static build output rather than a raw source-code workspace. Run `npm run build` first and deploy `dist`, `build`, `out`, `public`, or another folder that contains `index.html` and assets. PreviewShip does not run `npm install` or build source zips after upload.
 
@@ -81,8 +81,9 @@ Use these links when listing PreviewShip in extension marketplaces, README files
 |------|--------|---------------|
 | React, Vue, Vite, Svelte, Astro build output | Yes | Open the build folder or workspace and run the deploy command |
 | Next.js static export | Yes | Deploy the exported `out/` or static output folder |
-| Single `.html` file | Yes | Open the file and run `PreviewShip: Deploy Active HTML or Markdown File` |
+| Single `.html` file | Yes | Open the file and run `PreviewShip: Deploy Active HTML, Markdown, or PDF File` |
 | Markdown `.md` / `.markdown` file | Yes | Open the file and deploy it directly |
+| PDF `.pdf` file | Yes | Open it or right-click it in Explorer, then deploy with the native full-screen viewer |
 | Raw source folder with `package.json`, `src/`, and `node_modules` | No | Run the build first and deploy the generated output |
 
 ## HTML Publishing Guides
@@ -109,8 +110,8 @@ Use these links when listing PreviewShip in extension marketplaces, README files
 | Command | Description |
 |------|------|
 | `PreviewShip: Set API Key` | Set or update the API Key |
-| `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Deploy the current workspace; if the active editor is an HTML or Markdown file, you can deploy that file instead |
-| `PreviewShip: Deploy Active HTML or Markdown File` | Package the active `.html` or Markdown file and deploy it directly |
+| `PreviewShip: Deploy Workspace, HTML, Markdown, or PDF File` | Deploy the current workspace; if a supported file is active, you can deploy that file instead |
+| `PreviewShip: Deploy Active HTML, Markdown, or PDF File` | Package the active HTML, Markdown, or PDF file and deploy it directly |
 | `PreviewShip: Show Usage` | View remaining deployment quota |
 
 ## Configuration

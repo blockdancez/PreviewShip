@@ -8,7 +8,7 @@
 
 PreviewShip 仓库内置会话分享 skills。Codex 用户可以用 `share-codex-chat` 把当前 Codex 对话导出为高保真 HTML 页面；也可以用 `share-claude-code-chat` 读取本地 Claude Code JSONL 历史，把 Claude Code 对话和工具活动时间线发布成可分享页面。
 
-这个功能是辅助能力，不是 PreviewShip 的主部署流程；普通部署仍然使用 CLI、MCP、编辑器插件或 Web 控制台发布 HTML、Markdown 和静态构建产物。
+这个功能是辅助能力，不是 PreviewShip 的主部署流程；普通部署仍然使用 CLI、MCP、编辑器插件或 Web 控制台发布 HTML、Markdown、PDF 和静态构建产物。
 
 ### Share Codex Chat
 
@@ -329,7 +329,7 @@ Agent 调用 CLI 时，删除和回滚必须显式传 `--confirm <project-name>`
 部署静态网站到预览环境。
 
 **描述（Agent 可见）：**
-> 部署静态网站到 PreviewShip 预览环境，获取可公开访问的预览链接。适用于 HTML/CSS/JS 网站、React/Vue/Angular 构建产物（dist/build 目录）、静态站点生成器输出等。部署后链接可直接分享给任何人。
+> 部署静态网站或文档到 PreviewShip 预览环境，获取可公开访问的预览链接。适用于 HTML/CSS/JS 网站、React/Vue/Angular 构建产物、Markdown、PDF 和静态站点生成器输出。部署后链接可直接分享给任何人。
 
 **输入参数：**
 

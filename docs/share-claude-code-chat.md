@@ -2,7 +2,7 @@
 
 `share-claude-code-chat` 是 PreviewShip 为 Claude Code 对话分享提供的可选 Agent Skill。它会读取本机 `~/.claude/projects` 下的 Claude Code JSONL 会话记录，把可见用户消息、助手回复和安全的工具活动摘要还原成高保真 HTML 页面，通过 PreviewShip CLI 部署，并返回一个可分享的公开 URL。
 
-这个功能不是 PreviewShip 的主部署流程。普通用户仍然可以直接用控制台、CLI、MCP、VS Code/Cursor 插件部署 HTML、Markdown 或静态构建产物。`share-claude-code-chat` 更适合需要分享 Claude Code 研究过程、实现记录、工具调用脉络或评审上下文的场景。
+这个功能不是 PreviewShip 的主部署流程。普通用户仍然可以直接用控制台、CLI、MCP、VS Code/Cursor 插件部署 HTML、Markdown、PDF 或静态构建产物。`share-claude-code-chat` 更适合需要分享 Claude Code 研究过程、实现记录、工具调用脉络或评审上下文的场景。
 
 ## 与 Codex 会话分享的区别
 

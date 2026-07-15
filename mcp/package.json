@@ -1,7 +1,7 @@
 {
   "name": "previewship-mcp",
-  "version": "1.0.11",
-  "description": "MCP server for publishing AI-generated HTML, Claude HTML artifacts, Markdown, and frontend builds to fixed PreviewShip preview URLs.",
+  "version": "1.0.12",
+  "description": "MCP server for publishing AI-generated HTML, Claude HTML artifacts, Markdown, PDF, and frontend builds to fixed PreviewShip preview URLs.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -17,6 +17,7 @@
     "nextjs",
     "html",
     "markdown",
+    "pdf",
     "html-to-link",
     "html-to-url",
     "publish-html-online",

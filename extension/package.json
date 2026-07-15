@@ -1,9 +1,9 @@
 {
   "name": "previewship",
   "displayName": "PreviewShip",
-  "description": "Upload HTML, Markdown, or static build output from VS Code/Cursor and get a fixed share link—no Git, domain, or server setup.",
-  "version": "1.0.11",
-  "publisher": "previewship-BD",
+  "description": "Upload HTML, Markdown, PDF, or static build output from VS Code/Cursor and get a fixed share link—no Git, domain, or server setup.",
+  "version": "1.0.12",
+  "publisher": "previewship",
   "icon": "resources/icon.png",
   "license": "MIT",
   "homepage": "https://previewship.com",
@@ -31,6 +31,7 @@
     "nextjs",
     "html",
     "markdown",
+    "pdf",
     "html-to-link",
     "html-to-url",
     "publish-html-online",
@@ -61,17 +62,26 @@
       },
       {
         "command": "previewship.deploy",
-        "title": "PreviewShip: Deploy Workspace, HTML, or Markdown File"
+        "title": "PreviewShip: Deploy Workspace, HTML, Markdown, or PDF File"
       },
       {
         "command": "previewship.deployActiveHtml",
-        "title": "PreviewShip: Deploy Active HTML or Markdown File"
+        "title": "PreviewShip: Deploy Active HTML, Markdown, or PDF File"
       },
       {
         "command": "previewship.showUsage",
         "title": "PreviewShip: Show Usage"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "previewship.deployActiveHtml",
+          "when": "resourceScheme == file && resourceExtname =~ /\\.(html?|md|markdown|pdf)$/i",
+          "group": "navigation@20"
+        }
+      ]
+    },
     "configuration": {
       "title": "PreviewShip",
       "properties": {

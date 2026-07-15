@@ -2,9 +2,9 @@
 
 > Let AI coding agents publish HTML online, host Claude/ChatGPT HTML artifacts, deploy React/Vue/Vite/Next build output, and return fixed PreviewShip preview URLs through MCP.
 
-PreviewShip MCP gives Claude Code, Cursor, Windsurf, Codex-compatible workflows, and any MCP-compatible client a native way to publish browser-ready frontend artifacts. Agents can deploy a React/Vue/Vite/Next static build, upload an HTML file, publish Markdown, share AI-generated HTML, or return a QA/client review link without asking the user to open a hosting dashboard.
+PreviewShip MCP gives Claude Code, Cursor, Windsurf, Codex-compatible workflows, and any MCP-compatible client a native way to publish browser-ready frontend artifacts. Agents can deploy a React/Vue/Vite/Next static build, upload HTML, publish Markdown or PDF, share AI-generated HTML, or return a QA/client review link without asking the user to open a hosting dashboard.
 
-For a no-signup browser trial, use <https://previewship.com/try> to publish a 24-hour temporary frontend build, HTML, or Markdown preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
+For a no-signup browser trial, use <https://previewship.com/try> to publish a 24-hour temporary frontend build, HTML, Markdown, or PDF preview first. MCP is the authenticated agent workflow once you have a PreviewShip API key.
 
 ## What This MCP Server Does
 
@@ -13,6 +13,7 @@ For a no-signup browser trial, use <https://previewship.com/try> to publish a 24
 | Deploy frontend build output | Uploads `dist`, `build`, `out`, `public`, or another static folder with `index.html` |
 | Publish one HTML file | Packages `.html` as the preview entry page |
 | Publish Markdown | Renders `.md` / `.markdown` through a generated viewer page |
+| Publish PDF | Opens a single `.pdf` full screen through the browser's native viewer |
 | Support AI agent workflows | Returns deployment status and PreviewShip URL through structured tool output |
 | Keep review links stable | Uses fixed project preview URLs that point to the latest deployment |
 
@@ -94,10 +95,10 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ### `deploy_preview`
 
-Deploy a static website build output, single HTML file, or Markdown document to a PreviewShip preview environment.
+Deploy a static website build output, single HTML, Markdown, or PDF document to a PreviewShip preview environment.
 
 **Parameters:**
-- `path` (optional) — Directory, single `.html` file, or Markdown file to deploy. Defaults to current working directory.
+- `path` (optional) — Directory, single `.html` file, Markdown file, or PDF document to deploy. Defaults to current working directory.
 - `projectName` (optional) — Display project name. Defaults to directory name. PreviewShip automatically creates a deployment-safe hosting slug.
 - `excludePatterns` (optional) — Additional glob patterns to exclude.
 - `visibility` (optional) — `PUBLIC` or `PASSWORD`, applied before the deployment becomes available. New projects default to public; existing projects keep their current access when omitted.
@@ -112,6 +113,7 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 > "Build the Vue/Vite app and deploy the browser-ready output"
 > "Deploy report.html and share the preview link"
 > "Deploy README.md and share the preview link"
+> "Publish report.pdf and return the preview URL"
 > "Publish this ChatGPT HTML as a website URL"
 > "Host page.html online and return the URL"
 > "Deploy the dist folder with password access, and do not repeat the password"
@@ -125,6 +127,7 @@ Deploy a static website build output, single HTML file, or Markdown document to 
 | Next.js static export | Yes | Deploy the exported static folder |
 | Single `.html` file | Yes | Call `deploy_preview` with the file path |
 | Markdown `.md` / `.markdown` file | Yes | Call `deploy_preview` with the file path |
+| PDF `.pdf` file | Yes | Call `deploy_preview`; the returned URL opens the native full-screen viewer |
 | Raw source folder with `package.json` and `src/` | No | Build first and deploy the output |
 | `node_modules` | No | Do not upload dependency folders |
 

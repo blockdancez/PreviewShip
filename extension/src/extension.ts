@@ -102,11 +102,11 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
-  // Command 3: Deploy active HTML/Markdown file
+  // Command 3: Deploy active HTML/Markdown/PDF file
   context.subscriptions.push(
     vscode.commands.registerCommand('previewship.deployActiveHtml', async (uri?: vscode.Uri) => {
       if (!await ensureApiKey()) return;
-      await executeDeploy(apiClient, statusBar, { activeHtmlOnly: true, targetUri: uri });
+      await executeDeploy(apiClient, statusBar, { activeFileOnly: true, targetUri: uri });
     }),
   );
 

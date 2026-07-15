@@ -6,11 +6,11 @@ Use this source text for human-reviewed developer-tool, HTML-tool, static-hostin
 
 ## Short description
 
-Upload HTML, Markdown, or browser-ready static build output and get a fixed shareable URL without configuring Git, a domain, or a server.
+Upload HTML, Markdown, PDF, or browser-ready static build output and get a fixed shareable URL without configuring Git, a domain, or a server.
 
 ## Long description
 
-PreviewShip publishes a single HTML or Markdown file, pasted HTML, or a ZIP containing `index.html` and its assets. It returns a fixed project URL that points to the latest successful deployment. Users can publish from the browser, CLI, MCP-compatible AI agents, or the VS Code/Cursor extension. Public publishing is available to all users; password-protected publishing is a Pro feature.
+PreviewShip publishes a single HTML, Markdown, or PDF file, pasted HTML, or a ZIP containing `index.html` and its assets. PDF files open full screen through the browser's native viewer. It returns a fixed project URL that points to the latest successful deployment. Users can publish from the browser, CLI, MCP-compatible AI agents, or the VS Code/Cursor extension. Public publishing is available to all users; password-protected publishing is a Pro feature.
 
 ## Suggested categories and labels
 

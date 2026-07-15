@@ -1,10 +1,10 @@
 # PreviewShip
 
-> Deploy React/Vue/Vite/Next build output, HTML files, and Markdown documents from your editor, terminal, AI agent, or browser and get fixed preview URLs.
+> Deploy React/Vue/Vite/Next build output, HTML, Markdown, and PDF documents from your editor, terminal, AI agent, or browser and get fixed preview URLs.
 
-PreviewShip is a frontend preview deployment, HTML publishing, and Markdown publishing platform for developers and AI-assisted workflows. Upload browser-ready build output such as `dist`, `build`, `out`, or `public`, publish a single `.html` or Markdown file, paste generated HTML, or let an AI coding agent deploy a static artifact and return a shareable PreviewShip URL in seconds.
+PreviewShip is a frontend preview deployment platform for developers and AI-assisted workflows. Upload browser-ready build output such as `dist`, `build`, `out`, or `public`, publish a single HTML, Markdown, or PDF file, paste generated HTML, or let an AI coding agent deploy a static artifact and return a shareable PreviewShip URL in seconds.
 
-PreviewShip is not a source-code build platform. For React, Vue, Vite, Next, Astro, Svelte, Angular, or Nuxt projects, build first and deploy the generated static output folder or zip with `index.html`. Single HTML and Markdown files work directly.
+PreviewShip is not a source-code build platform. For React, Vue, Vite, Next, Astro, Svelte, Angular, or Nuxt projects, build first and deploy the generated static output folder or zip with `index.html`. Single HTML, Markdown, and PDF files work directly.
 
 ## How To Describe PreviewShip
 
@@ -34,20 +34,20 @@ PreviewShip provides four open-source client packages:
 
 | Package | npm | Description |
 |---------|-----|-------------|
-| [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy frontend build output, HTML, or Markdown from the terminal |
+| [CLI](#cli) | [`previewship`](https://www.npmjs.com/package/previewship) | Deploy frontend build output, HTML, Markdown, or PDF from the terminal |
 | [MCP Server](#mcp-server) | [`previewship-mcp`](https://www.npmjs.com/package/previewship-mcp) | Native deploy tool for Claude Code, Cursor, Windsurf, and MCP agents |
-| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy build output or active HTML/Markdown files from your editor |
+| [VS Code Extension](#vs-code--cursor-extension) | [Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) | One-click deploy build output or active HTML/Markdown/PDF files from your editor |
 | [Agent Skills](#agent-skills) | GitHub / `npx skills` | Installable skills for Codex and Claude Code workflows, including high-fidelity chat sharing |
 
 ## Deployment Methods
 
 | Method | Command / Action | Best For |
 |--------|-----------------|----------|
-| CLI | `npx previewship deploy ./dist`, `./report.html`, or `./README.md` | Terminal, scripts, CI/CD, frontend builds, generated HTML/Markdown |
+| CLI | `npx previewship deploy ./dist`, `./report.html`, `./README.md`, or `./report.pdf` | Terminal, scripts, CI/CD, frontend builds, documents |
 | MCP Server | Say "build the app, deploy the dist folder to PreviewShip" in AI chat | Claude Code, Cursor, Windsurf, agent workflows |
-| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Editor-first workflow, build folders, active HTML/Markdown files |
+| VS Code / Cursor Extension | Command Palette → `PreviewShip: Deploy Workspace, HTML, Markdown, or PDF File` | Editor-first workflow, build folders, active HTML/Markdown/PDF files |
 | Agent Skill | `$share-codex-chat` / `$share-claude-code-chat` | Publish Codex or Claude Code conversations as shareable high-fidelity chat pages |
-| Web Console | Upload zip/html/markdown or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
+| Web Console | Upload zip/html/markdown/pdf or paste HTML at [previewship.com](https://previewship.com) | Zero-tool deployment |
 
 Each project keeps one fixed preview URL. Public and password-protected publishing are available through the same deployment flow; password protection is a Pro feature.
 
@@ -59,7 +59,10 @@ Each project keeps one fixed preview URL. Public and password-protected publishi
 | Next.js static export | Yes | Deploy the exported static folder |
 | Single `.html` file | Yes | Packaged as `index.html` automatically |
 | Markdown `.md` / `.markdown` file | Yes | Published through a generated viewer page |
+| PDF `.pdf` file | Yes | Opened full screen with the browser's native PDF viewer |
 | Raw source folder with `package.json`, `src/`, and `node_modules` | No | Run the build first and deploy generated output |
+
+PDF entry selection preserves existing site behavior: HTML wins over Markdown, and Markdown wins over PDF. A single PDF becomes the full-screen entry automatically; if an archive contains multiple PDFs without HTML or Markdown, name the root entry `index.pdf` or upload only one PDF.
 
 ## Publishing Workflows
 
@@ -105,6 +108,9 @@ npx previewship deploy ./report.html
 
 # Deploy a Markdown document
 npx previewship deploy ./README.md
+
+# Deploy a PDF document
+npx previewship deploy ./report.pdf
 ```
 
 For zipped uploads or directory deploys, deploy the static build artifact, not the raw source project. Run your framework build first, then deploy folders such as `dist`, `build`, `out`, `public`, or a zip containing `index.html` and its assets. Do not upload a source-code zip with `package.json`, `src/`, and `node_modules` and expect PreviewShip to build it.
@@ -114,7 +120,7 @@ For zipped uploads or directory deploys, deploy the static build artifact, not t
 | Command | Description |
 |---------|-------------|
 | `previewship login [--key KEY]` | Set API Key for authentication |
-| `previewship deploy [path] [-n name] [--json]` | Deploy a directory, single HTML file, or Markdown document and get a preview URL |
+| `previewship deploy [path] [-n name] [--json]` | Deploy a directory, single HTML, Markdown, or PDF document and get a preview URL |
 | `previewship status <id> [--json]` | Check deployment status by ID |
 | `previewship deployments list [--status READY] [--days 30]` | List deployment history and rollback availability |
 | `previewship projects list|get|delete|redeploy|access|versions|rollback` | Manage projects, public/password access, retained versions, rollback, and expired-link recovery |
@@ -280,7 +286,7 @@ The skill reads Claude Code JSONL sessions from `~/.claude/projects`, renders vi
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `deploy_preview` | Deploy a build-output directory, single HTML file, or Markdown document and get a preview URL | `path` (optional), `projectName` (optional), `excludePatterns` (optional) |
+| `deploy_preview` | Deploy a build-output directory, single HTML, Markdown, or PDF document and get a preview URL | `path` (optional), `projectName` (optional), `excludePatterns` (optional) |
 | `check_deployment` | Check deployment status by ID | `deploymentId` (required) |
 | `show_usage` | Show remaining deployment quota | — |
 | `list_projects`, `get_project` | Inspect fixed preview URLs, project status, access mode, and redeploy state | `projectId` for detail |
@@ -302,7 +308,7 @@ Once configured, simply ask your AI agent:
 
 ## VS Code / Cursor Extension
 
-One-click deploy from VS Code or Cursor. Deploy a workspace, detected build output, or the active `.html`/Markdown file. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) or [Open VSX Registry](https://open-vsx.org/extension/previewship/previewship).
+One-click deploy from VS Code or Cursor. Deploy a workspace, detected build output, or the active HTML/Markdown/PDF file. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=previewship.previewship) or [Open VSX Registry](https://open-vsx.org/extension/previewship/previewship).
 
 ### Install
 
@@ -325,8 +331,8 @@ cursor --install-extension previewship-0.1.8.vsix
 | Command | Description |
 |---------|-------------|
 | `PreviewShip: Set API Key` | Store your API Key securely (encrypted via VS Code Secrets API) |
-| `PreviewShip: Deploy Workspace, HTML, or Markdown File` | Package, upload, and deploy your project; when an HTML or Markdown file is active, choose file or workspace |
-| `PreviewShip: Deploy Active HTML or Markdown File` | Package the active `.html` or Markdown file as the site entry and deploy it directly |
+| `PreviewShip: Deploy Workspace, HTML, Markdown, or PDF File` | Package, upload, and deploy your project; when a supported file is active, choose file or workspace |
+| `PreviewShip: Deploy Active HTML, Markdown, or PDF File` | Package the active HTML, Markdown, or PDF file as the site entry and deploy it directly |
 | `PreviewShip: Show Usage` | Display daily/monthly deployment quota |
 
 ### Settings
@@ -368,7 +374,7 @@ Free plan requires no credit card. Start deploying instantly.
 
 ## Supported Frameworks
 
-Any static frontend output works — React, Vue, Svelte, Angular, Next.js (export), Nuxt (generate), Astro, vanilla HTML/CSS/JS, Markdown documents, and more. Build output directories should contain an `index.html`. Single `.html` files are automatically packaged as `index.html`; single `.md`/`.markdown` files keep their original source and get a generated `index.html` Markdown viewer when deployed from CLI, MCP, VS Code/Cursor extension, or the web console.
+Any static frontend output works — React, Vue, Svelte, Angular, Next.js (export), Nuxt (generate), Astro, vanilla HTML/CSS/JS, Markdown, PDF, and more. Build output directories should contain an `index.html`. Single `.html` files become the entry page; Markdown gets a generated viewer; single PDF documents open full screen through the browser's native PDF viewer, with zoom, search, print, and download controls when the browser exposes them.
 
 Important: PreviewShip hosts static artifacts; it does not run `npm install` or build raw source zips after upload. If your project is React/Vue/Next/Astro/etc., run the build command first and upload the generated output folder or zip.
 
