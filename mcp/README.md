@@ -188,7 +188,7 @@ Set project access to `PUBLIC` or `PASSWORD`. `PUBLIC` clears an existing projec
 
 ### `list_project_versions`
 
-List retained project versions that can be used for rollback, with `page` and `size` pagination. Free accounts show fewer retained versions; Pro accounts keep more history.
+List retained project versions that can be used for rollback, with `page` and `size` pagination. Free and Pro accounts follow plan history limits; internal accounts can page through all history.
 
 ### `rollback_project_version`
 

@@ -388,7 +388,7 @@ export function registerTools(server: McpServer): void {
     'list_project_versions',
     {
       title: 'List Project Versions',
-      description: 'List retained project deployments that may be used for rollback. Free accounts see fewer retained versions; Pro accounts see more.',
+      description: 'List retained project deployments that may be used for rollback. Free and Pro accounts follow plan history limits; internal accounts can page through all history.',
       inputSchema: z.object({
         projectId: z.number().int().positive().describe('PreviewShip project ID.'),
         page: z.number().int().min(0).default(0).describe('Page number, starting from 0.'),
