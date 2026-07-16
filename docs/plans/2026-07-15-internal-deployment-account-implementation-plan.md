@@ -192,7 +192,7 @@ mvn test
 1. 为项目增加带悲观写锁的查询方法，在 `activateLatest` 的最终发布与 `latestDeploymentId` 更新阶段锁定项目。
 2. CUSTOMER 保持按套餐 supersede、到期和版本数量清理。
 3. INTERNAL supersede 后保留来源产物，且不设置到期时间。
-4. 定时清理查询或循环显式跳过 INTERNAL，不让 `null` 生命周期依赖偶然的 SQL 比较行为。
+4. Preview 与 retained artifact 定时清理显式跳过 INTERNAL，不让 `null` 生命周期依赖偶然的 SQL 比较行为；构建日志继续采用现有保留策略。
 5. Abuse 删除和项目删除仍可删除内部产物。
 
 ### 测试
@@ -202,7 +202,7 @@ mvn test
 - INTERNAL 可以使用密码访问，CUSTOMER FREE 仍不能。
 - INTERNAL 的 HTML 和回滚产物无角标。
 - INTERNAL 的成功部署和产物均无过期时间。
-- Cleanup 不删除 INTERNAL，项目删除和 Abuse 仍删除。
+- Preview/retained artifact Cleanup 不删除 INTERNAL，项目删除和 Abuse 仍删除；构建日志按现有保留策略清理。
 - 失败部署不替换当前版本。
 - 两个成功部署并发激活时，数据库 current 与托管 current 一致。
 
