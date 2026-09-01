@@ -1,7 +1,7 @@
 # PreviewShip 内容信任与发布安全治理设计
 
 - 日期：2026-09-01
-- 状态：待最终复核
+- 状态：已确认
 - 范围：Search Console 安全事件处置、内部账号信誉与索引策略、管理后台真实访问与安全诊断
 
 ## 1. 背景
@@ -53,9 +53,9 @@
 | 访问配置 | Project 配置 | PUBLIC、PASSWORD、PRIVATE |
 | 实际访问 | 异步 HTTP 探测 | 200、401、403、404、503、DNS/TLS/超时 |
 | 索引策略 | 项目与账号信誉联合判定 | INDEX、NOINDEX 及内部原因 |
-| 安全信誉 | 正式供应商 API | 精确 URL 未命中、平台根域命中、未知、供应商错误 |
+| 安全信誉 | 正式供应商 API | 精确 URL 未命中、某个平台域命中、未知、供应商错误 |
 
-`PASSWORD + HTTP 401` 和 `PRIVATE + HTTP 403` 属于符合预期，不应标记为站点故障。精确 URL 未命中与 `previewship.net` 根域命中可以同时成立，后台必须分别展示。
+`PASSWORD + HTTP 401` 和 `PRIVATE + HTTP 403` 属于符合预期，不应标记为站点故障。精确 URL 未命中与 `previewship.net` 等任一平台域命中可以同时成立，后台必须分别展示各域结果。
 
 ## 6. 工作流一：Search Console 安全事件处置
 
@@ -190,7 +190,7 @@ X-Robots-Tag: noindex, nofollow, noarchive
 - 任务：`state`、`available_at`、`lease_until`、`attempt_count`、`run_id`；
 - 目标：`project_id`、`target_deployment_id`；
 - HTTP：状态码、分类、耗时、错误码、检查时间；
-- 安全：精确 URL 信誉、平台根域信誉、供应商、检查时间；
+- 安全：精确 URL 信誉、供应商和检查时间；配置化平台域的信誉保存在共享缓存中，由管理查询一次批量合并；
 - 告警：连续失败次数、告警指纹和最后告警时间。
 
 任务状态：`NOT_RUN | QUEUED | RUNNING | SUCCEEDED | PARTIAL | FAILED`。
@@ -241,7 +241,9 @@ provider + scope(EXACT_URL | PLATFORM_DOMAIN) + indicator_sha256
 - `THREAT_FOUND`：命中威胁，并保存 threat types；
 - `PROVIDER_ERROR`：限流、超时或供应商错误。
 
-`NO_MATCH` 默认缓存 6 小时；`THREAT_FOUND` 和错误默认 10 分钟复核，并尊重供应商返回的过期时间。后台必须分别呈现精确 URL 和平台根域结果。
+`NO_MATCH` 默认缓存 6 小时；`THREAT_FOUND` 和错误默认 10 分钟复核，并尊重供应商返回的过期时间。后台必须分别呈现精确 URL 和各个平台域结果。
+
+平台域不是单值。配置提供受控列表，例如 `previewship.net`、`previewship.cc`、`previewship.com`、`mellowcade.com`；系统对规范化的 `https://{domain}/` 分别查询并保存结果。平台域属于全局事实，不复制到每个项目快照：后台列表一次批量读取这些缓存结果并合并为 `platformDomains[]`，全局定时任务负责刷新，避免按项目重复请求和结果漂移。
 
 ### 8.4 SSRF 和探测安全边界
 
@@ -260,7 +262,7 @@ provider + scope(EXACT_URL | PLATFORM_DOMAIN) + indicator_sha256
 - `access.mode`、`passwordConfigured`；
 - `diagnostics.state`、`stale`、`targetDeploymentId`；
 - HTTP 状态、分类、耗时、检查时间和错误码；
-- 精确 URL 与平台根域信誉；
+- 精确 URL 信誉与 `platformDomains[]` 逐域信誉；
 - `accessAlignment`、`overallSeverity` 和稳定的告警码。
 
 新增：
@@ -278,7 +280,7 @@ provider + scope(EXACT_URL | PLATFORM_DOMAIN) + indicator_sha256
 - 安全信誉；
 - 内部索引策略与账号信誉，仅管理员可见。
 
-示例：`PASSWORD / HTTP 401（符合预期）/ 243ms / 精确 URL 未命中 / 平台域危险 / 2 分钟前`。
+示例：`PASSWORD / HTTP 401（符合预期）/ 243ms / 精确 URL 未命中 / previewship.net 危险 / 2 分钟前`。
 
 用户侧的类型、接口和页面不增加这些字段。
 
@@ -353,7 +355,7 @@ provider + scope(EXACT_URL | PLATFORM_DOMAIN) + indicator_sha256
 
 - HTTP 200、401、403、404、410、429、503、DNS、TLS 和 timeout 分类正确。
 - PASSWORD+401、PRIVATE+403 为 MATCH，PUBLIC+401/403 为 MISMATCH。
-- 精确 URL NO_MATCH 与平台根域 THREAT_FOUND 可以同时保存和显示。
+- 精确 URL NO_MATCH 与任一平台域 THREAT_FOUND 可以同时保存和显示；多个平台域结果不能互相覆盖。
 - 未配置 provider、限流和供应商错误均为 UNKNOWN/PROVIDER_ERROR，不能显示“安全”。
 - 并发 claim 唯一、冷却幂等、租约恢复、重试退避和部署切换 CAS 写回均有覆盖。
 - 列表批量查询无 N+1；只有 QUEUED/RUNNING 状态短轮询。
