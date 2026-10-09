@@ -1,0 +1,1 @@
+../../../../backend/src/main/resources/db/migration/V40__background_content_reviews.sql

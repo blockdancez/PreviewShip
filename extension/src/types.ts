@@ -16,11 +16,31 @@ export interface DeploymentDetail {
   deploymentId: number;
   projectName: string;
   deploymentSource?: string;
-  status: 'QUEUED' | 'BUILDING' | 'READY' | 'FAILED';
+  status: 'QUEUED' | 'BUILDING' | 'READY' | 'SUPERSEDED' | 'FAILED' | 'EXPIRED' | 'BLOCKED';
+  urlStatus?: 'READY' | 'BLOCKED' | 'EXPIRED' | 'UNAVAILABLE';
+  contentRestricted?: boolean;
   previewUrl: string | null;
   errorMessage: string | null;
+  failureCode?: string | null;
+  contentRisk?: ContentRiskReview | null;
+  contentCheckRetryAvailable?: boolean;
+  contentCheckRetryExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ContentRiskReview {
+  status: 'PENDING' | 'CHECKING' | 'RETRYING' | 'COMPLETED';
+  attempt?: number;
+  maxAttempts?: number;
+  nextRetryAt?: string | null;
+  decision: 'PASS' | 'HOLD' | 'UNKNOWN';
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+  score: number | null;
+  policyVersion: string;
+  contentHash: string;
+  findings: { reasonCode: string; file: string; line: number; reason: string; suggestion: string }[];
+  notificationStatus: 'PENDING' | 'ACCEPTED' | 'RETRYING' | 'SKIPPED_NO_RECIPIENT' | 'SKIPPED' | 'SUPERSEDED';
 }
 
 // 用量信息

@@ -19,6 +19,8 @@
 !docs/share-codex-chat.md
 !docs/share-claude-code-chat.md
 !docs/directory-submission-kit.md
+!docs/version/
+!docs/version/**
 !examples/
 !examples/hello-previewship/
 !examples/hello-previewship/**

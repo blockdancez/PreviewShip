@@ -1,16 +1,16 @@
 # PreviewShip Directory Submission Kit
 
-Last verified: 2026-07-10
+Last verified: 2026-09-25
 
 Use this source text for human-reviewed developer-tool, HTML-tool, static-hosting, SaaS, CLI, MCP, and VS Code extension directories. Recheck each directory's rules before submission and avoid bulk or automated spam submissions.
 
 ## Short description
 
-Upload HTML, Markdown, PDF, or browser-ready static build output and get a fixed shareable URL without configuring Git, a domain, or a server.
+Publish AI-generated HTML, Markdown, PDF, or browser-ready static output as a shareable URL without Git, a domain, or a server.
 
 ## Long description
 
-PreviewShip publishes a single HTML, Markdown, or PDF file, pasted HTML, or a ZIP containing `index.html` and its assets. PDF files open full screen through the browser's native viewer. It returns a fixed project URL that points to the latest successful deployment. Users can publish from the browser, CLI, MCP-compatible AI agents, or the VS Code/Cursor extension. Public publishing is available to all users; password-protected publishing is a Pro feature.
+PreviewShip helps Vibe Coding beginners publish a single HTML, Markdown, or PDF file, pasted HTML, or a browser-ready ZIP containing `index.html` and its assets. PDF files open full screen through the browser's native viewer. It returns a fixed project URL that points to the latest successful deployment. Users can publish from the browser, CLI, MCP-compatible AI agents, or the VS Code/Cursor extension. Public publishing is available to all users; password-protected publishing is a Pro feature. PreviewShip does not analyze or score a website and does not build raw framework source on the server.
 
 ## Suggested categories and labels
 

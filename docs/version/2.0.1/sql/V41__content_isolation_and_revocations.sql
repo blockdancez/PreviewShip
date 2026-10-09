@@ -1,0 +1,1 @@
+../../../../backend/src/main/resources/db/migration/V41__content_isolation_and_revocations.sql

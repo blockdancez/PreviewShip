@@ -60,7 +60,8 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",

@@ -19,16 +19,34 @@ export interface DeploymentDetail {
   projectName: string;
   deploymentSource?: string;
   status: DeploymentStatus;
+  urlStatus?: 'READY' | 'BLOCKED' | 'EXPIRED' | 'UNAVAILABLE';
+  contentRestricted?: boolean;
   previewUrl: string | null;
   previewExpiresAt?: string | null;
   errorMessage: string | null;
   failureCode?: string | null;
+  contentRisk?: ContentRiskReview | null;
+  contentCheckRetryAvailable?: boolean;
+  contentCheckRetryExpiresAt?: string | null;
   visibility?: ProjectVisibility;
   createdAt: string;
   updatedAt: string;
 }
 
 export type DeploymentStatus = 'QUEUED' | 'BUILDING' | 'READY' | 'SUPERSEDED' | 'FAILED' | 'EXPIRED' | 'BLOCKED';
+export interface ContentRiskReview {
+  status: 'PENDING' | 'CHECKING' | 'RETRYING' | 'COMPLETED';
+  attempt?: number;
+  maxAttempts?: number;
+  nextRetryAt?: string | null;
+  decision: 'PASS' | 'HOLD' | 'UNKNOWN';
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+  score: number | null;
+  policyVersion: string;
+  contentHash: string;
+  findings: { reasonCode: string; file: string; line: number; reason: string; suggestion: string }[];
+  notificationStatus: 'PENDING' | 'ACCEPTED' | 'RETRYING' | 'SKIPPED_NO_RECIPIENT' | 'SKIPPED' | 'SUPERSEDED';
+}
 export type ProjectVisibility = 'PUBLIC' | 'PASSWORD' | 'PRIVATE';
 
 export interface ProjectItem {
@@ -197,10 +215,12 @@ export interface DeployResult {
   deploymentId?: number;
   projectName?: string;
   previewUrl?: string;
-  status?: string;
+  status?: DeploymentStatus;
+  urlStatus?: 'READY' | 'BLOCKED' | 'EXPIRED' | 'UNAVAILABLE';
   fileCount?: number;
   zipSizeBytes?: number;
   visibility?: ProjectVisibility;
+  contentRisk?: ContentRiskReview | null;
   error?: {
     code: string;
     message: string;

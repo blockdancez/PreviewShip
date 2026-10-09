@@ -120,16 +120,19 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
   // 轮询
   const detail = await pollDeployment(client, created.deploymentId);
 
-  if (detail.status === 'READY' && detail.previewUrl) {
+  if (detail.status === 'READY' && detail.previewUrl && (!detail.urlStatus || detail.urlStatus === 'READY')
+    && detail.contentRisk?.decision !== 'HOLD') {
     return {
       success: true,
       deploymentId: detail.deploymentId,
       projectName: detail.projectName,
       previewUrl: detail.previewUrl,
       status: detail.status,
+      urlStatus: detail.urlStatus,
       fileCount,
       zipSizeBytes: zipBuffer.length,
       visibility: detail.visibility || created.visibility,
+      contentRisk: detail.contentRisk,
     };
   }
 
@@ -137,9 +140,15 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
     success: false,
     deploymentId: detail.deploymentId,
     status: detail.status,
+    urlStatus: detail.urlStatus,
+    contentRisk: detail.contentRisk,
     error: {
-      code: 'DEPLOYMENT_FAILED',
-      message: detail.errorMessage || 'Deployment failed.',
+      code: detail.failureCode || (detail.urlStatus === 'BLOCKED' ? 'CONTENT_RISK_HIGH'
+        : detail.status === 'FAILED' ? 'DEPLOYMENT_FAILED' : `DEPLOYMENT_${detail.status}`),
+      message: detail.contentCheckRetryAvailable
+        ? `The safety check did not finish. Retry without uploading again at https://previewship.com/deploy?deploymentId=${detail.deploymentId}`
+        : detail.errorMessage || `Deployment ended with status ${detail.status}.`,
+      details: detail.contentRisk ? { contentRisk: detail.contentRisk } : undefined,
     },
   };
 }
@@ -221,14 +230,14 @@ export async function getUsage(): Promise<UsageResponse> {
 }
 
 /**
- * 轮询部署状态直到 READY / FAILED / 超时
+ * 轮询部署状态直到终态或超时
  */
 async function pollDeployment(client: ApiClient, deploymentId: number): Promise<DeploymentDetail> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
     const detail = await client.getDeployment(deploymentId);
-    if (detail.status === 'READY' || detail.status === 'FAILED') {
+    if (['READY', 'FAILED', 'BLOCKED', 'EXPIRED', 'SUPERSEDED'].includes(detail.status)) {
       return detail;
     }
     await sleep(POLL_INTERVAL_MS);

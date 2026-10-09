@@ -1,5 +1,7 @@
 # PreviewShip
 
+Version delivery records: [2.0.1 — background content review and automatic remediation](docs/version/2.0.1/README.md).
+
 > Deploy React/Vue/Vite/Next build output, HTML, Markdown, and PDF documents from your editor, terminal, AI agent, or browser and get fixed preview URLs.
 
 PreviewShip is a frontend preview deployment platform for developers and AI-assisted workflows. Upload browser-ready build output such as `dist`, `build`, `out`, or `public`, publish a single HTML, Markdown, or PDF file, paste generated HTML, or let an AI coding agent deploy a static artifact and return a shareable PreviewShip URL in seconds.

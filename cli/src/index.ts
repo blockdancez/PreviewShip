@@ -27,6 +27,7 @@ export type {
   DeploymentListItem,
   DeploymentListResponse,
   DeploymentStatus,
+  ContentRiskReview,
   ProjectAccessResponse,
   ProjectAccessUpdate,
   ProjectItem,

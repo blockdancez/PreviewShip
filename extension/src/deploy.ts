@@ -7,6 +7,7 @@ import { StatusBar } from './status-bar';
 import { ApiError } from './types';
 import { showApiError } from './errors';
 import { packHtmlFile, packMarkdownFile, packPdfFile, packWorkspace } from './zipper';
+import { deploymentFailure, isDeploymentTerminal } from './deployment-result';
 
 /** 常见构建产物目录，按优先级排列 */
 const BUILD_OUTPUT_DIRS = ['dist', 'build', 'out', '.output'];
@@ -404,18 +405,24 @@ export async function executeDeploy(
 
         // 6c. 轮询
         statusBar.building();
-        progress.report({ message: 'Building...' });
+        progress.report({ message: 'Preparing publish...' });
 
         const intervalMs = config.get<number>('pollIntervalMs', 3000);
         const timeoutMs = config.get<number>('pollTimeoutMs', 300000);
         const detail = await pollDeployment(apiClient, created.deploymentId, intervalMs, timeoutMs, token, progress);
 
         // 7. 结果处理
-        if (detail.status === 'READY' && detail.previewUrl) {
+        if (detail.status === 'READY' && detail.previewUrl && (!detail.urlStatus || detail.urlStatus === 'READY')
+          && detail.contentRisk?.decision !== 'HOLD') {
           statusBar.ready();
           await vscode.env.clipboard.writeText(detail.previewUrl);
+          const reviewStatus = detail.contentRisk?.status;
           const action = await vscode.window.showInformationMessage(
-            'Deployment successful! Preview URL copied to clipboard.',
+            reviewStatus === 'PENDING' || reviewStatus === 'CHECKING' || reviewStatus === 'RETRYING'
+              ? 'Deployment successful! Preview URL copied. Background safety check is still running.'
+              : detail.contentRisk?.decision === 'UNKNOWN'
+                ? 'Deployment successful! Preview URL copied. Background safety check is incomplete; this is not a violation finding.'
+                : 'Deployment successful! Preview URL copied to clipboard.',
             'Open Link',
           );
           if (action === 'Open Link') {
@@ -423,7 +430,13 @@ export async function executeDeploy(
           }
         } else {
           statusBar.failed();
-          vscode.window.showErrorMessage(`Deployment failed: ${detail.errorMessage ?? 'Unknown error'}`);
+          const failure = deploymentFailure(detail);
+          const action = await vscode.window.showErrorMessage(failure.message, {
+            modal: true,
+            detail: failure.detail,
+          }, 'Open Console', 'Copy Findings');
+          if (action === 'Open Console') await vscode.env.openExternal(vscode.Uri.parse(failure.consoleUrl));
+          if (action === 'Copy Findings') await vscode.env.clipboard.writeText(`${failure.message}\n\n${failure.detail}`);
         }
       } catch (err) {
         statusBar.failed();
@@ -440,7 +453,7 @@ export async function executeDeploy(
 }
 
 /**
- * 轮询部署状态直到 READY / FAILED / 超时 / 取消
+ * 轮询部署状态直到终态、超时或取消
  */
 async function pollDeployment(
   apiClient: ApiClient,
@@ -463,12 +476,12 @@ async function pollDeployment(
       const detail = await apiClient.getDeployment(deploymentId);
       console.log(`[PreviewShip] Poll #${attempt}: deploymentId=${deploymentId}, status=${detail.status}`);
 
-      if (detail.status === 'READY' || detail.status === 'FAILED') {
+      if (isDeploymentTerminal(detail.status)) {
         return detail;
       }
 
       progress.report({
-        message: detail.status === 'BUILDING' ? 'Building...' : 'Queued...',
+        message: detail.status === 'BUILDING' ? 'Preparing publish...' : 'Queued...',
       });
     } catch (err) {
       console.error(`[PreviewShip] Poll #${attempt} failed:`, err);

@@ -18,6 +18,7 @@ import { saveConfig, loadConfig, getApiKey, getConfigPath } from './config.js';
 import { ApiError } from './types.js';
 import type { DeploymentListItem, ProjectAccessResponse, ProjectItem, ProjectVersion } from './types.js';
 import { formatApiError, formatErrorJson } from './errors.js';
+import { formatContentRisk } from './content-risk.js';
 
 // 退出码
 const EXIT_SUCCESS = 0;
@@ -167,6 +168,7 @@ async function cmdDeploy(args: string[]): Promise<number> {
       console.log('');
       console.log(c.bold('Preview URL: ') + c.cyan(result.previewUrl!));
       console.log(c.bold('Access: ') + (result.visibility || (password ? 'PASSWORD' : publicAccess ? 'PUBLIC' : 'unchanged/default')));
+      for (const line of formatContentRisk(result.contentRisk, result.status)) console.log(line);
 
       // 尝试复制到剪贴板
       if (!args.includes('--no-clipboard')) {
@@ -179,6 +181,9 @@ async function cmdDeploy(args: string[]): Promise<number> {
       }
     } else {
       console.error(c.red('✗') + ` Deployment failed: ${result.error?.message}`);
+      if (result.error?.code) console.error(`Code: ${result.error.code}`);
+      for (const line of formatContentRisk(result.contentRisk, result.status)) console.error(line);
+      if (result.deploymentId) console.error(`Details: https://previewship.com/deploy?deploymentId=${result.deploymentId}`);
       if (result.error?.code && ['DAILY_QUOTA_EXCEEDED', 'MONTHLY_QUOTA_EXCEEDED', 'MONTHLY_UPLOAD_EXCEEDED', 'MAX_PROJECTS_EXCEEDED'].includes(result.error.code)) {
         console.error(c.yellow('  Upgrade to Pro: https://previewship.com/billing'));
       }
@@ -219,12 +224,14 @@ async function cmdStatus(args: string[]): Promise<number> {
     } else {
       console.log(`Deployment #${detail.deploymentId} — ${detail.projectName}`);
       console.log(`Status: ${formatStatus(detail.status)}`);
-      if (detail.previewUrl) {
+      if (detail.previewUrl && detail.status === 'READY' && (!detail.urlStatus || detail.urlStatus === 'READY') && detail.contentRisk?.decision !== 'HOLD') {
         console.log(`Preview URL: ${c.cyan(detail.previewUrl)}`);
       }
       if (detail.errorMessage) {
         console.log(`Error: ${c.red(detail.errorMessage)}`);
       }
+      if (detail.failureCode) console.log(`Code: ${detail.failureCode}`);
+      for (const line of formatContentRisk(detail.contentRisk, detail.status)) console.log(line);
       console.log(`Created: ${detail.createdAt}`);
     }
     return EXIT_SUCCESS;
