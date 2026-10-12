@@ -20,6 +20,11 @@ test('扩展区分发布前拦截与已上线后限制访问', async () => {
     assert.match(restricted.message, /Preview access restricted/);
     assert.match(restricted.detail, /restore access/);
     assert.doesNotMatch(restricted.detail, /remains unchanged/);
+    const recheck = deploymentFailure({ ...base, failureCode: 'CONTENT_RISK_RECHECK_PENDING', status: 'BLOCKED', contentRisk: { decision: 'UNKNOWN', status: 'RETRYING', findings: [] } });
+    assert.match(recheck.message, /temporarily restricted/);
+    assert.match(recheck.detail, /No re-upload is needed/);
+    const restoring = deploymentFailure({ ...base, failureCode: 'CONTENT_RISK_RECHECK_PENDING', status: 'BLOCKED', contentRisk: { decision: 'PASS', status: 'COMPLETED', findings: [] } });
+    assert.match(restoring.message, /access is being restored/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

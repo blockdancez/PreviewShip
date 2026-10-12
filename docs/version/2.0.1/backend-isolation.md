@@ -1,20 +1,22 @@
 # 后端内容隔离与渠道撤销
 
-本文承接 [设计](design.md) 与 [实施计划](implementation-plan.md) 的隔离、撤销和安全邮件部分。版本为 2.0.1；未提交 Git、未部署、未执行共享数据库迁移，也未发送真实邮件。
+本文承接 [设计](design.md) 与 [实施计划](implementation-plan.md) 的隔离、撤销和安全邮件部分。版本为 2.0.1；后台审核基线已在生产运行，本轮 2026-10-12 补丁未提交、未部署、未执行共享数据库迁移，也未发送真实邮件。
 
 ## 实现边界
 
 - `Project.contentQuarantinedAt` 与 `contentQuarantineDeploymentId` 是一组字段，不替代 `ACTIVE/BLOCKED`、托管归档或访问密码。
 - `ContentIsolationService.applyConfirmedRisk(deploymentId, contentHash, policyVersion)` 加入审核结果事务，重新验证 `COMPLETED HOLD` 和内容/策略，仅给同项目相同内容的已公开或已创建渠道版本标记 `BLOCKED + CONTENT_RISK_HIGH`，保留 `readyAt`。仅当该内容版本仍是 latest 时隔离项目。此方法不调用渠道或文件系统。
-- `requiresPrePublishReview(Project/Long)` 为发布链路提供门槛。`clearAfterVerifiedActivation(Project, Deployment, verifiedHash)` 只允许同项目当前 `READY` 且实际 `COMPLETED PASS`、hash 相同的整改版本清除标记；调用方必须持有项目锁，并已完成 current/latest 切换。永久封禁和归档不能被解除。
+- `requiresPrePublishReview(Project/Long)` 为发布链路提供门槛；近期风险账号后续提交也走前置检查，不能通过删除重建绕过。`clearAfterVerifiedActivation(Project, Deployment, verifiedHash)` 只允许同项目当前 `READY` 且实际 `COMPLETED PASS`、hash 相同的整改版本清除标记；调用方必须持有项目锁，并已完成 current/latest 切换。永久封禁和归档不能被解除。
 - 同一个版本的撤销任务唯一，保存不可变 provider ID 和项目 slug。任务不设级联删除外键：用户删除项目后仍能撤销残余 Vercel 直链。
 - 任务每 15 秒独立调度，每批 4 条，逐条领取 90 秒租约；网络执行不占事务。失败退避到最多 1 小时，持续保留可重试状态，不因重试耗尽宣称下架成功。第 3 次及以后失败输出固定 ERROR（只含部署 ID、次数、固定错误码，无异常链），接入既有错误巡检。`runId` 拒绝旧执行的完成回写；迟到清理只有在项目仍隔离同一 latest 时才能修改 current。
 - `PreviewProvider.deleteDeploymentStrict` 与原尽力清理接口分开。自托管按不可变部署 ID 删除，并在删除前后读取文件属性，只把 `NoSuchFileException` 当作已不存在；权限和其他 I/O 失败必须重试，不能把 `Files.exists=false` 当作成功。Vercel 使用独立 5 秒连接、20 秒读取预算，确认官方 `200 + DELETED + 同一 uid` 或 `404`。其他响应、超时、错误保留任务，错误码不含响应、源码、认证头或密钥。
 - 项目访问投影包含隔离状态；所有别名沿同一 slug 权限检查。既有每实例缓存 5 秒和本实例提交后失效保留，因此不承诺跨实例瞬间传播。后台新任务在 `COMPLETED PASS` 前仅禁止索引，不影响普通公开访问；历史无 `inputRef` 记录保持兼容。
-- 风险邮件沿用 outbox、固定请求快照、供应商幂等键与安全邮件权限。新增发布后模板描述“正在撤销”，不假称远程全部完成；整改通过后恢复链接，无人工审核队列承诺。`UNKNOWN` 不产生违规通知，原部署已删除、已到预览/游客到期时间，或已出现更新 READY/PASS 时旧通知作废。
+- 风险邮件沿用 outbox、固定请求快照、供应商幂等键与安全邮件权限。新增发布后模板描述“正在撤销”，不假称远程全部完成；整改通过后恢复链接，无人工审核队列承诺。纯技术 `UNKNOWN` 不产生违规通知；实际风险未决或隐藏编码无法完整检查，在暂隔离且自动复核终结后产生整改通知。原部署已删除、已到预览/游客到期时间，或已出现更新 READY/PASS 时旧通知作废。
 - 访问设置写入也使用项目锁，避免整实体回写覆盖刚提交的隔离字段。回滚重新创建部署并走相同前置门槛；认领只改变所有者和游客身份，保留隔离；归档/会员恢复只定向更新托管状态，不清除隔离。
 
 Vercel 契约依据：[Delete a Deployment 官方 API](https://vercel.com/docs/rest-api/deployments/delete-a-deployment)。不可变部署目标的撤销不按稳定别名字符串删除，避免误删已指向整改版本的别名。
+
+本轮暂隔离复用撤销任务：自托管撤销 current/项目公开入口并保留私有不可变制品，复核通过恢复原版本；Vercel 严格删除后用完整已验哈希快照重建，READY 前不放开项目。私有 `ContentRiskRestoreJournal` 保留新副本坐标，数据库落库或补偿删除失败后可续清理，不重复创建未知副本。每次短事务检查 runId、内容/策略、latest、所有者、到期和永久封禁，旧版标记 `CONTENT_RISK_VERSION_REVOKED` 而不替换 current。确认风险仍执行严格删除，恢复不是对 HOLD 的放行。
 
 ## 文件与迁移
 

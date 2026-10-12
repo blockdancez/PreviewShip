@@ -7,11 +7,18 @@ export function isDeploymentTerminal(status: DeploymentDetail['status']): boolea
 /** 原因按文本展示，控制台链接仅指向固定产品域名。 */
 export function deploymentFailure(detail: DeploymentDetail): { message: string; detail: string; consoleUrl: string } {
   const restricted = detail.status === 'BLOCKED' || detail.urlStatus === 'BLOCKED';
+  const opaque = detail.contentRisk?.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED');
   const code = detail.failureCode || (restricted && detail.contentRisk?.decision === 'HOLD'
     ? 'CONTENT_RISK_HIGH' : `DEPLOYMENT_${detail.status}`);
   const title = code === 'CONTENT_RISK_HIGH' ? restricted
     ? 'Preview access restricted: high-risk content needs changes.'
     : 'Publish paused: high-risk content needs changes.'
+    : code === 'CONTENT_RISK_VERSION_REVOKED' ? 'This historical version has been withdrawn. Open the current version or publish a correction.'
+    : code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
+      ? 'Preview access is restricted: encoded active content could not be fully inspected.'
+      : detail.contentRisk?.decision === 'PASS'
+      ? 'Safety recheck passed: preview access is being restored.'
+      : 'Preview access is temporarily restricted pending automatic safety verification.'
     : code === 'CONTENT_CHECK_UNAVAILABLE' ? 'Publish paused: the required safety check is incomplete.'
       : detail.errorMessage || `Deployment ended with status ${detail.status}.`;
   const review = detail.contentRisk;
@@ -33,6 +40,11 @@ export function deploymentFailure(detail: DeploymentDetail): { message: string; 
         : detail.contentCheckRetryAvailable
           ? 'Your upload is saved. Open the console to retry the safety check without uploading again. This version has not gone live.'
           : 'Open the console for recovery options. This version has not gone live.' : '',
+      code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
+        ? 'Remove obfuscation or provide readable code, then publish a correction in the same project.'
+        : detail.contentRisk?.status === 'COMPLETED' && detail.contentRisk.decision !== 'PASS'
+        ? 'Automatic rechecking could not resolve the risk. Revise the content and publish a correction in the same project.'
+        : 'No re-upload is needed. Open the console to follow the automatic recheck and restoration.' : '',
       review?.decision === 'HOLD' && review.notificationStatus === 'ACCEPTED' ? 'The email service accepted the remediation notice; delivery is not yet confirmed.' : '',
       review?.decision === 'HOLD' && (review.notificationStatus === 'PENDING' || review.notificationStatus === 'RETRYING') ? 'The remediation notice is pending or retrying. Use these findings for now.' : '',
     ].filter(Boolean).join('\n\n'),

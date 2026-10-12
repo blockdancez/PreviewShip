@@ -30,5 +30,9 @@ test('旧审核未决结果给出自动检查整改建议，不要求人工复�
     assert.match(blocked, /Access to this preview has been restricted/);
     assert.doesNotMatch(blocked, /remains unchanged/);
     assert.deepEqual(formatContentRisk({ status: 'COMPLETED', decision: 'PASS', riskLevel: 'LOW', findings: [] }), []);
+    const pendingRisk = { status: 'RETRYING', decision: 'UNKNOWN', findings: [{ reasonCode: 'RISK_EVIDENCE_PENDING', reason: '', suggestion: '' }] };
+    assert.match(formatContentRisk(pendingRisk, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' '), /temporarily restricted.*automatic.*No re-upload/);
+    assert.match(formatContentRisk({ ...pendingRisk, status: 'COMPLETED' }, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' '), /Access remains restricted/);
+    assert.match(formatContentRisk({ ...pendingRisk, status: 'COMPLETED', decision: 'PASS' }, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' '), /access is being restored/);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

@@ -1,0 +1,1 @@
+../../../../backend/src/main/resources/db/migration/V42__durable_content_abuse_history.sql

@@ -17,7 +17,7 @@ def main():
     version = Path(__file__).resolve().parent
     migrations = version.parents[2] / "backend/src/main/resources/db/migration"
     ordered = sorted(migrations.glob("V*__*.sql"), key=lambda p: int(re.match(r"V(\d+)__", p.name)[1]))
-    if not ordered or ordered[-1].name != "V41__content_isolation_and_revocations.sql":
+    if not ordered or ordered[-1].name != "V42__durable_content_abuse_history.sql":
         raise RuntimeError("迁移列表与 2.0.1 验收目标不一致")
     # 子进程只接收工具运行所需环境，避免继承任何共享数据库连接配置或密钥。
     environment = {"PATH": str(binaries) + os.pathsep + os.defpath, "LANG": "C", "LC_ALL": "C"}
@@ -48,10 +48,12 @@ def main():
             sql(version / "sql/test-local-migrations.sql")
             sql(version / "sql/verify-background-review.sql")
             sql(version / "sql/verify-content-isolation.sql")
+            sql(version / "sql/verify-content-abuse-history.sql")
             print(json.dumps({"result": "PASS", "postgres": run("postgres", "--version").stdout.strip(),
-                              "migration_count": len(ordered), "versions": "V2-V41",
+                              "migration_count": len(ordered), "versions": "V2-V42",
                               "checks": ["historical_input_not_backfilled", "PENDING_constraint",
-                                         "quarantine_pair", "revocation_unique", "revocation_survives_deletion"],
+                                         "quarantine_pair", "revocation_unique", "revocation_survives_deletion",
+                                         "abuse_history_survives_deletion", "abuse_report_deduplication"],
                               "shared_database_access": False}, ensure_ascii=False))
         except subprocess.CalledProcessError as failure:
             # 本脚本只含合成数据，但仍限制日志长度；不读取或输出用户环境。

@@ -1,5 +1,5 @@
 -- 仅供 verify-local-migrations.py 的新建本机临时库使用；禁止用于共享环境。
--- 依赖 V40/V41 和 test-local-legacy-seed.sql；事务回滚合成变更，可重复本机验收。
+-- 依赖 V40/V41/V42 和 test-local-legacy-seed.sql；事务回滚合成变更，可重复本机验收。
 BEGIN;
 SET LOCAL TIME ZONE 'UTC';
 DO $$
@@ -27,10 +27,23 @@ BEGIN
         RAISE EXCEPTION '撤销任务唯一约束缺失';
     EXCEPTION WHEN unique_violation THEN NULL;
     END;
+    INSERT INTO content_abuse_history(source, source_key, user_id, project_id, deployment_id,
+                                     project_slug, content_hash, reason_code, confirmed)
+    VALUES ('AI_CONFIRMED', 'local-fixture', 9000001, 9000001, 9000001,
+            'migration-fixture', repeat('a', 64), 'CONTENT_RISK_HIGH', true);
+    BEGIN
+        INSERT INTO content_abuse_history(source, source_key, project_slug, reason_code, confirmed)
+        VALUES ('AI_CONFIRMED', 'local-fixture', 'migration-fixture', 'CONTENT_RISK_HIGH', true);
+        RAISE EXCEPTION '安全事件幂等约束缺失';
+    EXCEPTION WHEN unique_violation THEN NULL;
+    END;
     DELETE FROM deployments WHERE id = 9000001;
     DELETE FROM projects WHERE id = 9000001;
     IF NOT EXISTS (SELECT 1 FROM content_risk_revocations WHERE deployment_id = 9000001 AND status = 'PENDING') THEN
         RAISE EXCEPTION '项目删除错误地丢失了撤销任务';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM content_abuse_history WHERE deployment_id = 9000001 AND confirmed) THEN
+        RAISE EXCEPTION '项目删除错误地丢失了安全审计';
     END IF;
 END $$;
 ROLLBACK;

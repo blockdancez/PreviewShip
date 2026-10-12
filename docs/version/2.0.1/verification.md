@@ -1,5 +1,28 @@
 # 2.0.1 本地验证记录
 
+## 2026-10-12 钓鱼漏检修复（当前交付）
+
+代码基线：backend `38acd20`、console `940126b` 加本轮未提交补丁。以下为本机 Java 21、Node 20.19.5、H2 与临时 PostgreSQL 17.11 的结果；没有发布生产、提交 Git、写共享数据库、发送真实邮件或向模型上传真实样本。旧机器摘要属于 10-09 历史验收，不代表本轮结果。
+
+| 范围 | 命令与实际结果 |
+|---|---|
+| 后端全量及失败项复测 | 单线程 `mvn -q test`：940 项，最初最后一项远程恢复请求对象复用断言失败；修复后 `mvn -q -Dtest=ContentIsolationPersistenceTest,ContentIsolationServiceTest,ContentRiskArtifactSnapshotTest,ContentRiskRestoreJournalTest test` 退出 0，实际匹配的两类 16 项通过。最终 Surefire XML 汇总 940 项，927 通过、13 跳过、失败/错误 0；没有把首轮退出码写成成功 |
+| 最终后端打包 | `mvn -q -DskipTests package` 退出 0；V42 和新增核心类已打入 JAR |
+| Console | `npm run test:unit` 222/222、`npm run lint`、`INDEXNOW_ENABLED=false npm run build` 均通过；最后只新增编码不透明/旧版撤销的八语言断言，定向 `node --test scripts/content-risk-render.test.mjs scripts/deployment-rules.test.mjs` 28/28 通过 |
+| 客户端 | CLI `npm run build` 和格式测试 2/2；MCP `npm run build` 和结果测试 1/1；扩展 `npm run compile` 和结果测试 1/1。未发行 npm/商店包 |
+| 本地迁移 | `python3 docs/version/2.0.1/verify-local-migrations.py`：V2–V42 共 41 个迁移、历史输入兼容、审计删除存续、投诉幂等及三个只读验收 SQL 通过；临时库已销毁 |
+| 浏览器布局 | 使用真实组件 SSR 与当前构建 CSS 的本地静态夹具；中文/葡语 390px、英文 1440px 检查暂隔离、自动复核、恢复和报告入口，无横向溢出。静态夹具使用回退字体，没有验证登录/API 请求或真实邮件；临时页面、服务和视口覆盖已关闭 |
+
+核心回归覆盖：有界静态解码、唯一字面 URL 变量外传、本地脚本关联、编码不透明不能变零候选 PASS；纯技术错误不封禁，真实模型风险未决暂隔离；独立 HIGH/SAFE 自动纠正、同轮格式修复不能洗掉风险；自托管保留私有制品后恢复、远程完整资源重建及数据库失败补偿 journal；旧版不覆盖 current；永久封禁不被恢复；删除后安全记录、确认摘要拦截、风险账号前置审核、Cloudflare 登记幂等与持久渠道撤销。
+
+实际 #25101 样本仅在本机静态分析，不执行其脚本，不请求外传目的地，不上传模型，不纳入源码夹具。修复后召回隐藏行为、敏感数据、品牌、实际外传四类候选及一个外传目标，`needsAi=true`；送审文本 14,986 字符，原制品摘要前缀 `87c874c3b7c0` 保持一致。此结果证明该漏检路径得到召回，不能代替真实模型判定。
+
+资源边界回归四项全部通过：`-Xmx512m`、单 CPU、150 MiB 存活基线加 128 MiB 制品，每个子进程完整扫描两次，分别 51.877/79.588/30.916/58.877 秒，保留原 90 秒超时。未压缩会员 ZIP 15/50/80 MiB、月上传 200/2048/4096 MiB 权益。合成压力测试不能证明全部生产负载和多 Pod 竞争，正式 CI 仍须 Node 24。
+
+上线仍需 Flyway V42、策略 `2026-10-12-v8`、共享私有 snapshot/journal 及真实访问/渠道/通知验收。Cloudflare 已有管理员核实后的登记入口，**未接入认证邮箱的自动投诉导入**；历史 LOW/PASS 不会自动重新扫描，旧危险项目要通过可信报告入口处置。没有实际人工审核队列。普通项目先发布后后台检查仍存在公开窗口，无法承诺零漏检或瞬时跨实例撤回。
+
+## 2026-10-09 历史基线验证
+
 2026-10-09：功能已实现并完成以下本地验收。未提交 Git、发布生产、写共享数据库、发布 npm/编辑器扩展、调用真实模型或发送真实通知。完整机器汇总见 [verification-summary.json](verification-summary.json)。
 
 ## 构建与测试
@@ -34,4 +57,4 @@
 
 真实 Flyway schema history/应用启动、生产 Secret、共享持久卷、多 Pod 竞争、Vercel 实际删除、自托管全部域名与代理缓存、真实模型与邮件受理，尚未在目标环境验收。本机 SQL 顺序验证不替代 Flyway 运行验收，模拟渠道成功不等于真实直链已撤销。
 
-当前流程仅接管新部署，不自动补发历史失败记录。先发布后审存在公开窗口；终态 UNKNOWN 保持在线但不伪装通过，新内容在 PASS 前不参与公开索引。部署、验收与回滚按 [release.md](release.md) 执行。
+当前流程仅接管新部署，不自动补发历史失败记录。先发布后审存在公开窗口；纯技术终态 UNKNOWN 保持在线但不伪装通过，实际模型风险未决或隐藏内容无法展开则限制访问，新内容在 PASS 前不参与公开索引。部署、验收与回滚按 [release.md](release.md) 执行。

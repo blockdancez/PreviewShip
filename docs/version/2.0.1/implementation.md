@@ -38,3 +38,9 @@ HTTP 上传沿用额度、格式、权限、密码与 ZIP 安全校验，创建�
 - 既有项目数、日/月部署次数、上传额度、并发构建、保留版本及托管期未修改；后台审核/撤销不另扣业务额度。已上线后下架不套用构建失败退款。
 
 核心实现：[DeploymentWorker](../../../backend/src/main/java/com/previewship/worker/DeploymentWorker.java)、[ActivePreviewService](../../../backend/src/main/java/com/previewship/service/ActivePreviewService.java)、[ContentRiskService](../../../backend/src/main/java/com/previewship/service/ContentRiskService.java)、[ContentIsolationService](../../../backend/src/main/java/com/previewship/service/ContentIsolationService.java)。
+
+## 钓鱼漏检修复
+
+静态解码视图不改变原始 hash；变量提交地址与读取输入的脚本证据可定位。风险未决暂隔离与已确认 HOLD 分开，纯技术失败保持既有异步行为；本地主动隐藏内容检查覆盖不足也可限制，但无 AI 模型结论。远程自动恢复使用完整快照与 NAS journal，入库/清理失败继续对账。
+
+独立 content_abuse_history 保留跨删除审计与已确认精确摘要，疑似只触发近期账号前置检查。可信投诉 API/管理表单复用管理员、CSRF、永久封禁及持久撤销，不引入未认证的邮箱指令执行。SQL 与上线合同唯一见 sql/README.md 和 release.md。
