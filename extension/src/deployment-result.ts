@@ -6,8 +6,12 @@ export function isDeploymentTerminal(status: DeploymentDetail['status']): boolea
 
 /** 原因按文本展示，控制台链接仅指向固定产品域名。 */
 export function deploymentFailure(detail: DeploymentDetail): { message: string; detail: string; consoleUrl: string } {
+  const review = detail.contentRisk;
   const restricted = detail.status === 'BLOCKED' || detail.urlStatus === 'BLOCKED';
-  const opaque = detail.contentRisk?.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED');
+  const opaque = review?.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED');
+  // 低分 PASS 也可能仍有疑似风险，只有已完成且明确安全的复核才可宣称正在恢复。
+  const restoring = review?.status === 'COMPLETED' && review.decision === 'PASS' && review.verifiedSafeRecheck === true;
+  const rechecking = ['PENDING', 'CHECKING', 'RETRYING'].includes(review?.status ?? '');
   const code = detail.failureCode || (restricted && detail.contentRisk?.decision === 'HOLD'
     ? 'CONTENT_RISK_HIGH' : `DEPLOYMENT_${detail.status}`);
   const title = code === 'CONTENT_RISK_HIGH' ? restricted
@@ -16,12 +20,12 @@ export function deploymentFailure(detail: DeploymentDetail): { message: string; 
     : code === 'CONTENT_RISK_VERSION_REVOKED' ? 'This historical version has been withdrawn. Open the current version or publish a correction.'
     : code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
       ? 'Preview access is restricted: encoded active content could not be fully inspected.'
-      : detail.contentRisk?.decision === 'PASS'
+      : restoring
       ? 'Safety recheck passed: preview access is being restored.'
-      : 'Preview access is temporarily restricted pending automatic safety verification.'
+      : rechecking ? 'Preview access is temporarily restricted pending automatic safety verification.'
+      : 'Preview access remains restricted: the safety recheck is unresolved.'
     : code === 'CONTENT_CHECK_UNAVAILABLE' ? 'Publish paused: the required safety check is incomplete.'
       : detail.errorMessage || `Deployment ended with status ${detail.status}.`;
-  const review = detail.contentRisk;
   const reviseInput = review?.findings.some((finding) =>
     ['CONTENT_CHECK_LIMIT_EXCEEDED', 'CONTENT_CHECK_ENCODING_UNSUPPORTED'].includes(finding.reasonCode));
   const findings = review?.findings.flatMap((finding) => [
@@ -42,9 +46,9 @@ export function deploymentFailure(detail: DeploymentDetail): { message: string; 
           : 'Open the console for recovery options. This version has not gone live.' : '',
       code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
         ? 'Remove obfuscation or provide readable code, then publish a correction in the same project.'
-        : detail.contentRisk?.status === 'COMPLETED' && detail.contentRisk.decision !== 'PASS'
-        ? 'Automatic rechecking could not resolve the risk. Revise the content and publish a correction in the same project.'
-        : 'No re-upload is needed. Open the console to follow the automatic recheck and restoration.' : '',
+        : restoring || rechecking
+        ? 'No re-upload is needed. Open the console to follow the automatic recheck and restoration.'
+        : 'The safety recheck has not confirmed this version is safe. Revise the content and publish a correction in the same project.' : '',
       review?.decision === 'HOLD' && review.notificationStatus === 'ACCEPTED' ? 'The email service accepted the remediation notice; delivery is not yet confirmed.' : '',
       review?.decision === 'HOLD' && (review.notificationStatus === 'PENDING' || review.notificationStatus === 'RETRYING') ? 'The remediation notice is pending or retrying. Use these findings for now.' : '',
     ].filter(Boolean).join('\n\n'),

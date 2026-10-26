@@ -1,5 +1,53 @@
 # 2.0.1 实现与验证记录
 
+## 2026-10-26 审核终态一致性补修（本地）
+
+用户授权修复生产验收发现的 P1；本地基线 Console `1fadd68`、Backend `462c83d`，本节记录其上未提交修改。使用 diagnose 的先失败后修复流程，并由独立协作复审单次/分组状态机及客户端遗漏；没有再次读取用户制品、请求真实模型、发送邮件、写共享数据库、提交代码或部署生产。
+
+| 范围 | 实际验证 |
+| --- | --- |
+| 原问题回归 | 单次已隔离后低分同级 SUSPICIOUS、旧分组关切被低分清除均先失败；“旧风险组 SAFE，但另一组首次低分 SUSPICIOUS”的聚合结果亦先复现错误终态 PASS。修后均保持 UNKNOWN 与有界重试，最终未决保留隔离、一个通知任务，并记录 `AI_RISK_UNRESOLVED / attempt=3` 的提交后 ERROR；完整 SAFE/HIGH 可恢复同一自托管版本 |
+| 历史兼容 | 公共摘要和管理员列表均输出 `verifiedSafeRecheck`；普通本地 PASS、旧 SUSPICIOUS/PASS 为 false，真实已完成 AI SAFE/HIGH 为 true。读摘要不重写旧决策、不排队重审或解封；不可恢复的旧快照可正常清理。历史 SAFE/HIGH 缺模型版本仍保留渠道恢复输入，避免影响原有合法恢复任务 |
+| Backend | Java 21.0.9 下 `mvn -q package` 退出 0，Surefire 汇总 **1,081 项：1,066 通过、15 条件跳过、失败/错误 0**，包含原有大制品堆内存测试。独立复审后仅调整上述历史恢复快照条件，再运行 `mvn -q -Dtest=ContentRiskPersistenceTest,ContentRiskServiceTest,ContentIsolationPersistenceTest package`：**78/78 通过**并重新打包成功；最终新增快照边界包含在这次 78 项内 |
+| Console | Node 24 下 `npm run test:unit` **351/351**、`npm run lint`、`INDEXNOW_ENABLED=false npm run build`（含类型、SSR 和 SEO 校验）通过。覆盖三发布入口、八语言、字段缺失/false/true、原文件重试不可用、BLOCKED 不开放链接、真实恢复有界轮询、游客自动复核/恢复不显示整改提示；另锁定明确封禁/撤销优先于残留待复核 finding。相关新增用例先 RED 后 GREEN。沿用既有构建 chunk 大小提示 |
+| CLI / MCP / Extension | 三端同步新增可选安全字段与历史未决提示，均先复现后修复。CLI `npm test` 2/2、typecheck、build 通过；MCP `npm test` 1/1（真实工具 handler，含缺值/false/true/未决/自动复核、真实 SDK `error.code` 发布失败契约）、typecheck、build 通过；Extension node:test 1/1（多状态分支）、`tsc --noEmit`、compile、VSIX 打包通过，临时包在仓库外。同步核验明确封禁及旧版本撤销不被残留 finding 误判为恢复。均未调整发行版本或发布 |
+| 变更检查 | 根仓库、Backend、Console 的 `git diff --check` 通过。临时日志/夹具/VSIX 均在仓库外，未加入真实制品、凭据、数据库快照或调试埋点 |
+
+后端 15 项跳过仍为 7 项显式真实 OpenRouter 和 8 项显式 PostgreSQL 集成环境用例，不计为通过。测试使用本地 H2、合成内容、模拟供应商和渠道；没有以本地通过代替生产模型、邮件送达、真实 VERCEL 恢复或新版本生产验收。安全字段仅代表审核结论，不证明渠道已恢复；访问仍须部署/URL READY。
+
+补修尚未提交或部署。包括 #30970 在内的旧终态记录保持原决策和隔离，不自动重审、解封或发新通知；新客户端会明确展示未决和同项目整改入口。无新增 SQL，策略标识沿用 v10。技术正文见 [后台审核](backend-review.md#生产终态-pass-仍隔离2026-10-26)，交付顺序见 [上线](release.md#2026-10-26-审核终态一致性补修上线)。
+
+## 2026-10-26 增长转化生产验收
+
+北京时间 14:48 起执行生产验收，收尾证据截至 15:42。用户已发布 Console `1fadd68`、Backend `462c83d`；本次没有重新部署、修改生产配置、直接写数据库、真实付款、注册账号、发信或手动处置真实用户项目。数据库全部使用 `REPEATABLE READ READ ONLY`，确认 `transaction_read_only=on`，统一按 UTC 解读无时区时间列；凭据仅由既有环境变量传入进程，未输出或保存。
+
+结论：**已确认本轮增长改动实际部署，已验的发布、内容承接、套餐引导与埋点链路通过；整体生产仍有审核状态一致性未关闭项，不能宣布全部业务验收通过。**
+
+| 范围 | 实际证据与结果 |
+| --- | --- |
+| 后端运行版本 | `prd/previewship` 镜像 `prd_2026-10-26-14-39-57`；generation/observed=154，Updated/Ready/Available=1/1/1；Pod `previewship-7c456879b5-x75rs` 14:42:40 启动、14:43:49 Ready，重启 0。本轮 10 个关键类和另 12 个审核/隔离类的生产 JAR 字节 CRC/SHA256 均与已验证构建一致；整包 JAR 因重打包 hash 不同，不据此夸大成整包字节一致 |
+| 数据库版本 | Flyway 验证 42 个迁移，schema=44；无新增迁移。只读查询确认 V44/V42/V41 成功 |
+| 前端与 SEO | 91 个公开页面/文本 URL 最终均 200，另 5 个 robots 策略页符合基线；9 个重点内容页、24 个八语言 try 参数、59 个 hreflang 目标及 76 条互链通过；sitemap=289，无重复或查询 URL。85 份 HTML、主 JS/CSS 与页内上传器 chunk 均与本机发布构建逐字节一致；旧指南 308→200 保留 UTM/gclid |
+| 认证与 CORS | 独立 HTTP 会话的 8 组协议检查通过：匿名 me/项目接口 401；可信 GET/POST 预检 204 且 Origin/credentials 正确，不可信预检 403。用真实生成 state 模拟 provider `access_denied` 的三组失败回调：站内购买目标保留，外链/编码绕过不反射，host-only 与共享域 Cookie 均正确清除；全过程未完成 Google 真实登录 |
+| 真实游客发布 | 通过浏览器仅创建一份无个人数据的 HTML 合成页 `qa-growth-20261026`（项目 #28387、部署 #30964）。640 字节 ZIP，SELF_HOSTED/READY，创建至 READY=0.189 秒；本地规则 COMPLETED/PASS、未调用模型。浏览器首次访问及整页刷新均正常，页面含 `noindex,nofollow`；原始预览期限为北京时间 2026-10-27 15:05:28，按正常游客规则自动过期，没有手工删除或延长 |
+| 发布与草稿交互 | 繁中指南 CTA 保留 UTM，进入 HTML 模式；原过期草稿显示“先保存项目再重新发布”，没有误称已恢复在线。真实合成发布刷新后仍能恢复预览信息；HTML、Markdown、文件三种空输入均显示持久提示且不产生第二次部署，事件均为 INPUT_REQUIRED/preflight。生产 try 带 mode 参数整页加载无 hydration/React 错误记录 |
+| 响应式与实验 | 375×812 视口下 try/内容页没有整页横向溢出（经典滚动条时 clientWidth/scrollWidth=360/360）。实际分流进入 v3 experiment，上传卡与后续正文间距 32px；刷新后仍可展示，同页面/语言曝光在库中保持一条，实验 page_id/locale/variant 与 viewport_v1 齐全 |
+| 套餐与现有账号 | 匿名月/年 Pricing 分别进入正确的注册目标，切换登录仍保留年付。现有年付账号 Billing 保持当前套餐、禁止重复订阅；西语所选年付正确展示，主动切法语后异步翻译加载仍为法语，验收后恢复原中文。没有点击付款、续订、取消或修改订阅；该测试账号在验收时段新 Checkout 与付款均为 0 |
+| 埋点入库 | 合成旅程实际关联到一次 deploy_submitted、一次 SYSTEM guest_deployment_created、一次 SYSTEM deployment_ready 和一次 SYSTEM preview_first_viewed；三种校验各一次。匿名 pricing_plan_selected 月/年各一次、pricing_plan_presented 年付一次；paywall_viewed 的 surface/placement/trigger 与 viewport_v1 齐全，客户端事件携带 growth_2026_10_26。成功事实没有通过客户端伪造 |
+
+生产日志不是零异常：14:54 三条 OAuth `access_denied` WARN 与主动协议验收对应；15:18、15:20 另有两条自然流量后台审核终态 ERROR。只读状态核对如下，未打开、执行或向模型发送这些用户制品：
+
+| 自然流量部署 | 当前核对事实 | 验收结论 |
+| --- | --- | --- |
+| #30969、#30971 | 三轮 AI_UNSUPPORTED_EVIDENCE，SUSPICIOUS/HIGH；COMPLETED/UNKNOWN、next_retry_at=null；latest 部署 BLOCKED/CONTENT_RISK_RECHECK_PENDING，项目已隔离 | 风险门禁已生效；模型关切未被证实，不等于确认恶意。后台审核未收敛，不能计作审核通过；ERROR 日志存在不证明运维告警送达 |
+| #30970 | COMPLETED/PASS、MEDIUM/25，模型仍 SUSPICIOUS/HIGH、attempt=3、无错误码/下一轮；latest 部署与项目仍为待复核隔离状态 | **P1 状态一致性及恢复收口缺口**：普通低分 PASS 与严格 SAFE/HIGH 恢复条件组合后，检查已终结但发布未恢复，不会再自动复核。未自动解除隔离，技术分析与待修边界见 [后台审核](backend-review.md#生产终态-pass-仍隔离2026-10-26) |
+
+上述审核相关类相对上一生产基线 `c3becfc` 无源码差异，且本次生产类字节与已验证构建一致；这能排除这些类的本轮直接代码差异，不能排除输入、运行配置或供应商输出的变化。当前验收没有实施安全策略改动或数据修复。
+
+覆盖限制：Google 成功交换、注册验证码/邮件、Free 配额失败后真实认领、跨账号认领拒绝、实际 Checkout/支付/Webhook 后恢复、取消续订和所有文件类型的大体量测试均未在生产触发。现有登录账号为年付，不为覆盖这些分支创建新账号、变更套餐或故意消耗额度；相应本地回归与部署类校验保留，但不冒充外部验收。CLI 默认 User-Agent 访问合成预览时收到 Cloudflare 403/1010，真实浏览器重复访问正常；未改 WAF，也不把该 CLI 读取计为通过。
+
+所有临时 HTTP 结果、协议摘要、类指纹与日志在仓库外，原始日志权限 0600；版本文档不保存 cookie、OAuth state、凭据、邮箱或真实设备标识。临时浏览器标签已关闭、视口覆盖已撤销，原有用户标签保持。合成页面仍按原定 24 小时期限保留。
+
 ## 2026-10-26 增长转化优化
 
 方案、优先级、事件契约和后续观察统一维护在 [增长转化优化](growth-optimization.md)。代码基线 Console `63917ef`、Backend `c3becfc` 加本轮未提交修改；保留此前安全主题文档的工作区改动。环境为本机 Node 24.19.0、Java 21.0.9，后端使用测试配置/H2；以下均为本地验收，没有提交 Git、部署、共享数据库写入、真实付款、真实发信或向模型上传用户制品。

@@ -3,15 +3,22 @@ import type { ContentRiskReview, DeploymentStatus } from './types.js';
 /** 不输出源码片段或候选网址，避免整改提示泄露秘密或引导访问风险内容。 */
 export function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?: DeploymentStatus, failureCode?: string | null): string[] {
   if (!review) return [];
+  if (failureCode === 'CONTENT_RISK_VERSION_REVOKED') return ['This historical version has been withdrawn. Open the current version or publish a correction in the same project.'];
   if (review.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED')) return [
     'Encoded content that actively loads a page or script could not be fully inspected. Access remains restricted.',
     'Remove obfuscation or provide readable code, then publish a correction in the same project.',
   ];
-  if (failureCode === 'CONTENT_RISK_VERSION_REVOKED') return ['This historical version has been withdrawn. Open the current version or publish a correction in the same project.'];
   const live = deploymentStatus === 'READY';
   const restrictedRecheck = deploymentStatus === 'BLOCKED' && (failureCode === 'CONTENT_RISK_RECHECK_PENDING'
-    || review.findings.some((finding) => finding.reasonCode === 'RISK_EVIDENCE_PENDING'));
-  if (restrictedRecheck && review.decision === 'PASS') return ['The safety recheck passed. Preview access is being restored; the link remains unavailable until restoration completes.'];
+    || !failureCode && review.findings.some((finding) => finding.reasonCode === 'RISK_EVIDENCE_PENDING'));
+  if (restrictedRecheck && review.status === 'COMPLETED' && review.decision === 'PASS') {
+    // 低分疑似结果也可能记为 PASS，只有明确安全复核才能宣称进入恢复。
+    if (review.verifiedSafeRecheck === true) return ['The safety recheck passed. Preview access is being restored; the link remains unavailable until restoration completes.'];
+    return [
+      'Automatic rechecking could not resolve the risk. Access remains restricted; this is not a confirmed violation.',
+      'Check sensitive-data collection and submission destinations, then publish a correction in the same project.',
+    ];
+  }
   if (restrictedRecheck && review.status !== 'COMPLETED') return ['Preview access is temporarily restricted while an automatic safety recheck runs. No re-upload is needed.'];
   if (review.status === 'PENDING') return [live
     ? 'Preview is live. The background safety check is queued.'

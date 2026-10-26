@@ -39,6 +39,8 @@ export interface ContentRiskReview {
   attempt?: number;
   maxAttempts?: number;
   nextRetryAt?: string | null;
+  /** 后端确认完整高置信安全复核；缺字段时不推断可恢复。 */
+  verifiedSafeRecheck?: boolean;
   decision: 'PASS' | 'HOLD' | 'UNKNOWN';
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
   score: number | null;

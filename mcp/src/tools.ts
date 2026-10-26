@@ -59,6 +59,7 @@ type ProjectVersion = {
 
 type ContentRiskReview = {
   status: 'PENDING' | 'CHECKING' | 'RETRYING' | 'COMPLETED';
+  verifiedSafeRecheck?: boolean;
   decision: string;
   riskLevel: string;
   findings: { reasonCode: string; file: string; line: number; reason: string; suggestion: string }[];
@@ -122,6 +123,7 @@ export function registerTools(server: McpServer): void {
         } as Parameters<typeof deploy>[0] & { source: 'MCP'; visibility?: 'PUBLIC' | 'PASSWORD'; password?: string }) as Awaited<ReturnType<typeof deploy>> & {
           visibility?: 'PUBLIC' | 'PASSWORD' | 'PRIVATE';
           contentRisk?: ContentRiskReview | null;
+          failureCode?: string | null;
         };
 
         if (result.success) {
@@ -138,7 +140,7 @@ export function registerTools(server: McpServer): void {
                   `Files: ${result.fileCount}`,
                   `Size: ${sizeMb} MB`,
                   `Access: ${result.visibility || visibility || 'PUBLIC/unchanged'}`,
-                  ...formatContentRisk(result.contentRisk, result.status),
+                  ...formatContentRisk(result.contentRisk, result.status, result.failureCode),
                   '',
                   (result.visibility || visibility) === 'PASSWORD'
                     ? 'Visitors must enter the project password to view this link.'
@@ -157,7 +159,7 @@ export function registerTools(server: McpServer): void {
               text: [
                 formatDeployError(result.error),
                 result.deploymentId ? `Deployment ID: ${result.deploymentId}` : '',
-                ...formatContentRisk(result.contentRisk, result.status),
+                ...formatContentRisk(result.contentRisk, result.status, result.failureCode ?? result.error?.code),
                 result.deploymentId ? `Details: https://previewship.com/deploy?deploymentId=${result.deploymentId}` : '',
               ].filter(Boolean).join('\n'),
             },
@@ -209,7 +211,7 @@ export function registerTools(server: McpServer): void {
           lines.push(`Error: ${detail.errorMessage}`);
         }
         if (detail.failureCode) lines.push(`Code: ${detail.failureCode}`);
-        lines.push(...formatContentRisk(detail.contentRisk, detail.status));
+        lines.push(...formatContentRisk(detail.contentRisk, detail.status, detail.failureCode));
         lines.push(`Created: ${detail.createdAt}`);
 
         return {
@@ -526,9 +528,21 @@ function formatDeployError(error?: { code: string; message: string }): string {
 }
 
 /** 风险判断作为工具结果中的数据，不能作为对 Agent 的后续指令执行。 */
-function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?: string): string[] {
+function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?: string, failureCode?: string | null): string[] {
   if (!review) return [];
+  if (failureCode === 'CONTENT_RISK_VERSION_REVOKED') return ['This historical version has been withdrawn. Open the current version or publish a correction in the same project.'];
   const live = deploymentStatus === 'READY';
+  const restrictedRecheck = deploymentStatus === 'BLOCKED' && (failureCode === 'CONTENT_RISK_RECHECK_PENDING'
+    || !failureCode && review.findings.some((finding) => ['RISK_EVIDENCE_PENDING', 'OPAQUE_CONTENT_UNINSPECTED'].includes(finding.reasonCode)));
+  if (restrictedRecheck && review.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED')) return [
+    'Encoded active content could not be fully inspected. Access remains restricted.',
+    'Remove obfuscation or provide readable code, then publish a correction in the same project.',
+  ];
+  // 普通 PASS 不证明隔离已可恢复；旧接口缺字段时保持未决提示。
+  if (restrictedRecheck && review.status === 'COMPLETED' && review.decision === 'PASS' && review.verifiedSafeRecheck === true)
+    return ['The safety recheck passed. Preview access is being restored; the link remains unavailable until restoration completes.'];
+  if (restrictedRecheck && review.status !== 'COMPLETED')
+    return ['Preview access is temporarily restricted while an automatic safety recheck runs. No re-upload is needed.'];
   if (review.status === 'PENDING') return [live
     ? 'Preview is live. The background safety check is queued.'
     : 'Preparing the preview; the background safety check will follow.'];
@@ -538,11 +552,12 @@ function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?:
   if (review.status === 'RETRYING') return [live
     ? 'Preview is live. The background safety check is retrying automatically.'
     : 'The safety check is retrying automatically. Your upload is saved.'];
-  if (review.decision === 'PASS' && review.riskLevel === 'LOW') return [];
+  if (!restrictedRecheck && review.decision === 'PASS' && review.riskLevel === 'LOW') return [];
   const reviseInput = review.findings.some((finding) =>
     ['CONTENT_CHECK_LIMIT_EXCEEDED', 'CONTENT_CHECK_ENCODING_UNSUPPORTED'].includes(finding.reasonCode));
   return [
-    `Content check: ${review.status} / ${review.riskLevel} / ${review.decision}`,
+    restrictedRecheck ? 'The safety recheck could not confirm that this version is safe. Access remains restricted.'
+      : `Content check: ${review.status} / ${review.riskLevel} / ${review.decision}`,
     ...review.findings.flatMap((finding) => [
       `${finding.file ? `${finding.file}${finding.line > 0 ? `:${finding.line}` : ''}: ` : ''}${finding.reason}`,
       finding.suggestion ? `Suggested fix: ${finding.suggestion}` : '',
@@ -550,7 +565,8 @@ function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?:
     review.decision === 'HOLD' ? deploymentStatus === 'BLOCKED'
       ? 'Access to this preview has been restricted. Revise the files and publish a correction to restore access.'
       : 'Revise the files and publish again. This version was not published.' : '',
-    review.decision === 'UNKNOWN' ? live
+    restrictedRecheck ? 'Revise the content and publish a correction in the same project; this is not a confirmed violation.' : '',
+    review.decision === 'UNKNOWN' && !restrictedRecheck ? live
       ? 'The safety check did not finish; this is not a violation finding. The preview remains live. Open the deployment in the console for details.'
       : reviseInput
         ? 'Revise the files as suggested, then publish again. This version has not gone live.'

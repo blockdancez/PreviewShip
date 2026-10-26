@@ -1,5 +1,24 @@
 # 2.0.1 后台内容审核实现与验证
 
+## 生产终态 PASS 仍隔离（2026-10-26）
+
+增长版本生产验收中发现 #30970：检查 COMPLETED/PASS、MEDIUM、score=25，模型仍为 SUSPICIOUS/HIGH，三轮已终结；同一当前部署仍为 BLOCKED/CONTENT_RISK_RECHECK_PENDING、项目 quarantine。同期 #30969/#30971 为三轮 AI_UNSUPPORTED_EVIDENCE 后 UNKNOWN，亦处于暂隔离。这些是风险关切，不是已核实恶意；本轮没有打开用户制品或执行解封/重审。实际快照见 [生产验收](verification.md#2026-10-26-增长转化生产验收)。
+
+代码可以解释 #30970 的状态组合：ContentRiskService 的评分允许有本地支持的低分 SUSPICIOUS 返回 PASS；先前风险关切只有严格降级时才改回 UNKNOWN，而旧 SUSPICIOUS 与新 SUSPICIOUS 的等级相同。自动恢复则另外要求 PASS + usedAi + SAFE + HIGH，ContentIsolationService 再次检查 SAFE/HIGH。因此本轮 PASS 没有触发恢复，旧隔离保留；记录却已经终结，不会再次被后台领取，也不满足 terminal UNKNOWN 的最终日志/通知分支。公开访问保护没有因此放开，但用户与运营可能把检查 PASS 误解成已恢复，这是 P1 状态一致性和收口缺口。
+
+用户随后授权修复，已在本地统一该状态链路，尚未提交或部署：
+
+- 单次与分组审核已有风险关切时，同级低分 SUSPICIOUS 保留为 `UNKNOWN/AI_RISK_UNRESOLVED`，保留风险分数和管理员证据；首次普通低分 PASS 策略不变。
+- 已暂隔离版本即使各组聚合为 PASS，仍须整份制品完整 `SAFE/HIGH` 才能结束复核并恢复；否则保留关切，沿现有三轮/15、60 秒/五分钟窗口有限重试。耗尽后进入最终未决日志及整改通知流程，游客无收件人则跳过邮件。
+- 用户摘要与管理列表增加衍生字段 `verifiedSafeRecheck`，仅 `COMPLETED/PASS`、模型版本非空且 `SAFE/HIGH` 为 true，不暴露模型引文。它表示安全复核结论，不表示渠道恢复完成或任务一定已入队；实际访问仍以部署状态和 URL 状态为准。
+- 前端只有字段明确为 true 才显示恢复并进行有界轮询；历史缺字段或 false 的隔离 PASS 显示未决、原因与“修改后重新发布”，不提供原文件自动复抽。游客自动复核/恢复期间隐藏整改提示，八语言终态提示不再把未决称作确认风险。
+- CLI、MCP 与编辑器扩展同步区分明确安全恢复、自动复核与终态未决；历史隔离 PASS 不再误报恢复，MCP 不再把已上线后隔离的未决版本描述成“尚未上线”。类型字段为可选，兼容旧后端；客户端源码与构建已验证，未执行 npm/扩展发行。
+- 不可恢复的旧 SUSPICIOUS/PASS 快照按既有终态保留期清理；真正 SAFE/HIGH 恢复所需快照仍保留。
+
+本补修沿用 v10 策略标识，不改扫描、模型、评分权重或安全恢复门槛，无新增 SQL。历史 `COMPLETED/PASS/SUSPICIOUS` 不回填、不重新排队、不自动解封；包括 #30970 在内的存量仍需整改或另行授权处置。本轮没有写生产数据或重审用户制品。回归与完整验证见 [补修验证](verification.md#2026-10-26-审核终态一致性补修本地)。ERROR 日志不能当成运维告警已经送达。
+
+本次增长提交 `462c83d` 与上一生产 `c3becfc` 的审核、隔离、扫描、Prompt、AI Client、通知和 Worker 源码相同；生产 12 个相关主类与已验证构建逐字节一致。该证据只排除这些类的直接代码变化，不能单凭未改代码推断问题与此次流量或输入准备完全无关。
+
 ## 本模块实现
 
 - `ContentRiskService.registerBackgroundReview` 加入发布事务，将实际 `preparedFiles` 写成私有不可变快照，并登记每部署唯一的 `PENDING` 检查；事务回滚会删除本次快照。已有同策略、同内容的有效 `PASS` 可复用，已知 `HOLD` 或未决旧轮次不能被重置为无风险任务。
