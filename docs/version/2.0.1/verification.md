@@ -1,5 +1,78 @@
 # 2.0.1 实现与验证记录
 
+## 2026-10-26 增长转化优化
+
+方案、优先级、事件契约和后续观察统一维护在 [增长转化优化](growth-optimization.md)。代码基线 Console `63917ef`、Backend `c3becfc` 加本轮未提交修改；保留此前安全主题文档的工作区改动。环境为本机 Node 24.19.0、Java 21.0.9，后端使用测试配置/H2；以下均为本地验收，没有提交 Git、部署、共享数据库写入、真实付款、真实发信或向模型上传用户制品。
+
+| 范围 | 命令与实际结果 |
+| --- | --- |
+| 前端全量测试 | 全面复审后 `npm run test:unit`：344 项，344 通过，失败/跳过 0。新增真实 handler/重渲染/Effect 清理与重连回归，覆盖套餐与认证回跳、付款轮询与 BFCache、跨账号认领/缓存保护、StrictMode、存储不可用、输入错误分类、内容意图承接和可视曝光；小组定向结果为其子集，不重复累计 |
+| 前端静态检查 | `npm run lint` 退出 0；完整构建中的 TypeScript 检查通过 |
+| 前端生产构建 | `INDEXNOW_ENABLED=false npm run build` 退出 0；Vite、SSR 和 SEO 生成完成。仍有大于 500 kB 的 bundle 提示，不是构建失败；本轮未以引入新依赖扩大范围 |
+| SEO/GEO | 构建校验通过：14 个必需路由、180 个 PROVEN 本地化路由、35 个本地化聚合路由、11 项 Bing 描述和 9 项长度约束。sitemap 仍为 289 个 URL；抽查七个目标路径的实际修改日期为 2026-10-26。产品事实文本沿用集中 facts 的更新时间，竞争资料核验日期保持原值；本地 IndexNow 已跳过，未提交线上索引 |
+| 后端完整测试与打包 | 全面复审后 `mvn -B clean package` 退出 0、BUILD SUCCESS：1,078 项，1,063 通过、15 跳过、失败/错误 0；Surefire XML 汇总一致。包含共用 OAuth 安全目标/成功失败 Cookie 清理、Stripe 返回套餐语言来源、认领账号变化不消费 Token、匿名 Pricing 准入、公开事件已有 Session 的内部账号排除，以及新入库 paywall 口径兼容 |
+| 后端跳过项 | 7 项 `OpenRouterContentRiskLiveTest` 需要显式真实供应商调用；8 项显式 PostgreSQL 集成测试分布于 ProductEventProperties、AdminAnalyticsOutcome、AdminAnalyticsRepository、ProductEventPropertiesRecovery。此次没有提供外呼/共享数据库测试配置，不将跳过项计为通过 |
+| 代码检查与评审 | 根仓库、Console、Backend 的 `git diff --check` 均通过。购买、游客、内容三个模块分别深入复审，根代理整合前后端事件契约、账号边界和浏览器结果；确认问题先以失败测试或实际浏览器布局复现再修复，具体影响与修复见方案的“全面复审补修” |
+
+本地浏览器使用明确指向 `127.0.0.1` 的合成 API 与账号，不连接真实发布/付款接口。实际检查：1265×711 桌面 `/try` 输入和 Publish 首屏可见；375×812 手机三模式保持一行、Publish 可达；空 HTML 显示持久错误并可继续修改；西语年付选择正确进入 Billing，不自动 Checkout；免费密码权益说明在新标签打开套餐，原输入保留；合成认领额度失败保留恢复卡片，转入 Billing 不被自动请求抢回；手机 Billing `scrollWidth=clientWidth=375`，无横向溢出。验收结束已恢复视口、关闭临时标签并停止本地夹具与服务；完整日志及夹具均在仓库外。
+
+全面复审的最终浏览器验收使用生产构建产物，由仓库外静态夹具仅将公开 API 地址改指本机合成接口，并注入固定实验身份；仓库源码及 dist 未写入夹具身份或本机 API。1265×900 桌面与 375×812 手机均确认实验上传卡、持久校验错误和下一段正文之间有 32px 间距；手机比较表仅自身滚动，修复前整页 scrollWidth=972，修复后 scrollWidth=clientWidth=360（375px 视口含滚动条），Billing 为 375/375。繁中指南 CTA 保留 UTM 并进入 HTML 模式；带 mode 参数的 `/try` 整页加载未发现 hydration/React 错误日志。最终 Billing 西语年付入场后主动切换法语，异步翻译包加载完成仍为 `lang=fr`，标题“Facturation & Abonnements”和“Offre sélectionnée”正确；此前已实际复现的 Suspense 重连回滚不再出现。
+
+本地接收的合成事件确认必要 surface、client_flow_version、可视口径或 preflight 错误码齐全；整个浏览器验证未创建 Checkout 或伪造权威成功事件。该结果只验证客户端发送载荷，不等同生产事件入库或真实 Stripe 状态。最终标签、视口覆盖和两个本地夹具服务均已清理。
+
+限制：禁用存储时仅当前页面/SPA 内存兜底，完整刷新和 OAuth 跨页不能保证草稿恢复；不支持 IntersectionObserver 时不记录可视曝光，但业务操作可用。真实 Google OAuth、Stripe Checkout/Webhook、生产新事件和用户端结果尚未验证。当前结果不证明线上已生效，也不保证收入或转化率上升；授权发版后按 [上线与回滚](release.md#2026-10-26-增长转化优化上线) 先后端再 Console，并按方案观察成熟队列和满 28 日数据。本轮无新增 SQL、迁移、价格、套餐或第三方分析依赖。
+
+## 2026-10-20 live 告警只读排查
+
+基线 backend `c3becfc`，生产仍为 `prd_2026-10-15-10-55-10`。本轮为分析；未修改源码、共享数据库、项目状态或配置，未真实发信、登记投诉、执行上传 JavaScript、访问机器人目的地或向模型发送用户制品。
+
+生产 PostgreSQL `REPEATABLE READ READ ONLY` 快照：项目 #13348、唯一部署 #14801，2026-09-08 11:42:27 UTC 创建（北京时间 19:42:27）、当前 latest/READY，项目 ACTIVE/PUBLIC、无隔离或封禁，预览有效至 11-04。该项目 content_risk_checks=0、content_abuse_history=0。V35 于 09-28 07:01:14 UTC 安装，V40 于 10-09 10:06:53 UTC 安装；邮件 10-20 08:31 是举报时间，不是上传时间。
+
+同一只读核对中，排除封禁/隔离、失效访客与账号不可用后的当前有效 READY 项目共 732，其中 **197 无任何审核记录，183 为 PUBLIC**；197 均创建于 V35 安装之前。197 不是恶意站点数量，而是存量覆盖缺口。另新策略 v10 存续检查已有 AI PASS 351、AI HOLD 1，证明 AI 在运行；仍有 AI 未决 6（证据需复核/未达确认门槛/不支持证据各 2）、输入超限 7、节点超限 1、编码拒绝 10，不能宣称上轮全部异常已消失。这些是现存记录汇总，不是包含已删除记录的完整失败率，且不能解释 #14801 的缺失审核。
+
+当前 published 目录为单份 16,021 字节 HTML，本机读取验长并与远端 SHA-256 比较一致；current 链接指向 #14801。只输出结构事实与固定诊断，没有在版本文档中保存原文、完整摘要、token/chat ID 或地址。静态行为链为微软身份宣称→邮箱/密码读取→机器人消息 URL→图片 src 请求→假错误/跳转，另尝试访问当前站点同源可读的 cookie/存储，不能夸大为读取微软域数据或证明实际有人受害。
+
+用当前 v10 编译类在本机静态回放（临时 Java 工具在仓库外，无网络）：needsAi=true，scanError/planError=null，候选仅 SENSITIVE_COLLECTION 1，脱敏摘录 15,502 字符、模型输入 20,030/48,000、315 引用、单批；唯一扫描目标为 CDN RESOURCE，本地可核验提交引用=0。无 form 导致品牌候选未加入，拼接机器人 URL 与 Image.src 未进入传输匹配。独立复核用真实脱敏引用 ID 构造合成 MALICIOUS/HIGH 响应，本机 parse/assess 返回 SUBMISSION_TARGET_MISSING → AI_INVALID_EVIDENCE → UNKNOWN，并保留 MALICIOUS 关切；它不是一次真实模型调用或真实生产判定。暂隔离仍可能在实际模型提出关切时触发，不能说这种页面必然被新规则放行。
+
+代码证据与待修边界统一维护在 backend-review.md。日志 API 两次读取（一次历史范围、一次有界 tail）均超时，本轮不把无法取得日志当作没有错误；主要结论依据数据库、已验真实制品和确定性本地复放。原始 HTML 临时副本在分析结束清理，源码测试和 Git 不收录真实制品。
+
+## 2026-10-15 生产发布后的只读核对（11:00–11:07 +08:00）
+
+用户发布后核对 backend HEAD `c3becfc`。生产 Pod `previewship-65d6548c74-sr59w` 使用镜像 `prd_2026-10-15-10-55-10`，10:57:34 启动、10:59:23 Ready，重启 0。Flyway 启动校验 42 个迁移；只读数据库确认 V44/V42/V41 均成功，没有新增迁移。
+
+只读分段读取运行中 `/app/app.jar` 的 ZIP 内容（共约 391 KiB，校验 ZIP CRC），逐一比较 ContentRiskPrompt、OpenRouterContentRiskClient、ContentRiskGroupState、ContentRiskService、ContentRiskProperties 五个核心类，均与上轮通过测试的本地最终 JAR 的类 SHA-256 一致。生产包内默认 v10、备用 `openai/gpt-4.1`、maxAiChars=48,000；五个相应内容审核环境覆盖变量均未设置。没有修改容器文件、应用配置或生产数据。一次 Java stdin 读取与一次原始二进制范围读取失败属于本次核对工具路径，后改用有界 base64 范围读取并完整验长/CRC；它们不是应用或 OpenRouter 故障。
+
+生产 PostgreSQL 使用 `REPEATABLE READ READ ONLY`，数据库名 previewship、transaction_read_only=on，最后快照 UTC `2026-10-15 03:07:13.78516`（北京时间 11:07:13）。旧 TIMESTAMP 字段按 UTC 存储解读，未把数据库会话时区当成已转换的值。
+
+- 新策略实际记录只有 **1 条**：游客部署 **#26631**，11:05:59.801 创建，11:06:00.291 READY，11:06:05.817 COMPLETED/PASS、errorCode=null、model_version=null（本地规则，未调用 AI）。这证明普通后台发布在新版本中成功运行，不证明 AI 或备用纠正路径已在生产流量中触发。
+- 新 Pod 日志截至 11:06:00 的 146 行中，SAFE_WITH_EVIDENCE、SUBMISSION_TARGET_MISSING、AI_INVALID_OUTPUT、AI_EVIDENCE_REVIEW_REQUIRED、AI_INPUT_BUDGET_EXCEEDED、AI_GROUP_STATE_INVALID、发布审核最终失败、后台审核最终未完成均 **0 条**；AI 输入计划及自动纠正也 **0 条**。截至最后数据库快照仍没有新 AI 审核，因此不能由错误为 0 推出三类事故生产验收已经完成。
+- 发布前两小时的现存 v9 检查有 PASS 20、UNKNOWN 2（预算/输出异常各 1）；此为当前存续行数，不将已删除记录遗漏的分母解释为完整生产失败率。
+- 历史 #26533/#26555/#26560/#26564 仍是 v9 UNKNOWN/READY；#26558 仍是 v9 AI_EVIDENCE_REVIEW_REQUIRED/FAILED；#26538/#26540 当前已不存在。此次核对没有补偿发布、重置审核或发信，也没有新建生产测试项目。
+
+结论：**新补丁和默认配置已实际部署，普通发布链路通过一个生产样本；AI 输出纠正、证据纠正及同规模预算触发路径仍缺生产样本，不能宣布全部业务验收通过。** 两份原事故制品的无损压缩已由上轮本地静态重放证实；真实主备模型合成验证是独立本地外呼，不能冒充生产审核记录。后续应基于 v10 的真实 AI/异常纠正/大输入记录继续验收。本次没有运行持续监控或创建自动任务。
+
+## 2026-10-15 审核可靠性修复（当前增量）
+
+代码基线 backend `c2e68a6` 加本轮未提交差异；本机 Java 21、隔离 H2，生产证据来自上轮只读核对。本轮不提交、不部署、不写共享库、不封禁真实用户或发送真实邮件；真实用户制品只做本机静态预算回放，不执行脚本、不访问样本目的地、不上传模型。
+
+- 输出契约：新请求使用嵌套 assessment 三分支 Schema，SAFE+证据在生成约束中被排除；服务端继续严格拒绝矛盾响应，具体原因用于一次纠正并切备用模型。嵌套/旧扁平混合坏响应的外层/内层固定风险枚举均保留，不从任意嵌套数据推测恶意。实际模型链进入既有 160 字符字段，不新增数据库列。
+- 输入预算：对报告中的两份已验原始 content hash 制品，本机逐一验证 22 候选、31,600 原文字符、542/540 引用保留；实际请求从 57,885/57,789 降至 **42,753/42,713**，均完整单批，不依赖增大 48,000 上限。真实源文本、路径、摘要与 ZIP 不入版本文档或源码测试。
+- 首轮定向 `mvn -q -Dtest=ContentRiskPromptTest,ContentRiskPromptPlanTest,ContentRiskGroupStateTest,ContentRiskBatchClientTest,ContentRiskSharedHostingTest,OpenRouterContentRiskClientTest,ContentRiskServiceTest,ContentRiskPersistenceTest test` 退出 0，**166/166** 通过；随后补齐在途升级及混合响应反例，最终结果以以下全量/复测为准。
+- 显式真实模型合成验收：`PREVIEWSHIP_OPENROUTER_LIVE_TEST=true mvn -q '-Dtest=OpenRouterContentRiskLiveTest#primaryAndFallbackSupportTheStructuredContractOnSyntheticAccounts' test` 退出 0。两模型各一份正常独立 API 认证、一份密码到机器人的近邻样本，共 **4 次 HTTP 200**：正常均经服务层 PASS、恶意均 HOLD，error=null；每次 1.047–1.430 秒，仅属小合成样本。没有发布测试网站或发信；默认测试不联网。模型实际接受新 Schema，不代表全部生产流量或零误判保证。
+- 升级保护：旧分组并批后保留最强 M/S/U，低置信或同轮修正不清 U，独立完整 HIGH/SAFE 可逐组清除；无关切、零轮次且同 hash 有效 PENDING 快照可续接新策略，runId/inputRef 不重建。已确认 HOLD、永久封禁与风险历史不因升级失效。
+- 独立静态复核已关闭分组布局漂移、PENDING 策略漂移及混合 envelope 遗忘关切三项问题，最终无阻断项。静态复核不替代以下实际测试。
+
+最终验证：
+
+| 范围 | 命令与结果 |
+|---|---|
+| 全量构建 | `mvn -q clean package` 退出 0；137 类、**1047 用例，1032 通过、15 跳过、0 失败/错误**。包含大制品内存测试：Scanner 4/4（共 223.658 秒）、Artifact 1/1；未排除资源用例。默认真实模型/外部环境依赖按条件跳过，不算通过 |
+| 最终补丁复测并重打包 | 全量之后仅修正混合 envelope 的固定风险枚举保存、补充 3 个反例。`mvn -q -Dtest=ContentRiskPromptTest,ContentRiskPromptPlanTest,ContentRiskGroupStateTest,ContentRiskBatchClientTest,ContentRiskSharedHostingTest,OpenRouterContentRiskClientTest,ContentRiskServiceTest,ContentRiskPersistenceTest package` 退出 0，**172/172** 通过（Client 57、Persistence 50 等）；不把累计 XML 说成一次全量执行 |
+| 真实制品最终回放 | 用最终 target/classes 静态重扫已验摘要的 26555/26560，候选 22、原文 31,600、引用 542/540、prompt 42,753/42,713、单批/无扫描错误，与修复设计一致；临时工具在仓库外 |
+| 成品与差异 | 最终 JAR 内 v10、fallback-model 默认和混合响应风险提取字节码已核验；根/Backend `git diff --check` 及版本文档本地链接检查通过。Console、CLI、MCP、扩展未改动，因此未重跑其构建 |
+
+以上全量与复测分别记录，真实模型 4 样本是独立显式执行，不等于所有 LiveTest 均验收。仅更新后端，无新 SQL、前端/API 字段或 IMAP 方案；旧终态/已删除项目未自动补偿。生产新镜像、v10 实际审核错误率、渠道处置与真实邮件仍待发布后验收。
+
 ## 2026-10-14 取消邮箱自动接入（当前交付边界）
 
 用户明确取消未发布的邮箱自动接入及相关实现。只读生产核对确认当前镜像仍为 `prd_2026-10-12-11-38-23`，Flyway 已成功至 V42（最新 V42/V41/V40），`external_abuse_alerts` 和 `external_abuse_mailboxes` 均不存在。本轮不对共享数据库执行写操作，不创建空白 V43，不重编号保留的 V44。共享托管 v9、既有后台风险复核/隔离/恢复、管理员可信报告登记及封禁邮件继续保留。
