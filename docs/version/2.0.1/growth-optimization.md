@@ -4,6 +4,8 @@
 
 ## 数据基线与决策
 
+关键词报告后续实施见本文末尾「关键词差异与 HTML 静态预览」。该增量与上文已发布的增长基线分开验收，不把本地实现视为搜索排名或生产转化已经改善。
+
 2026-10-26 只读复盘：数据库比较北京时间 09-26 至 10-25 与 08-27 至 09-25；Google/Bing 比较完整 28 日 09-26 至 10-23 与 08-29 至 09-25。经营事实排除 INTERNAL；成功和留存使用保留的 SYSTEM 成功事件，避免版本/项目删除影响。
 
 | 指标 | 前期 | 本期 |
@@ -122,3 +124,64 @@
 草稿维持 localStorage 单一持久来源；本地写入失败时只使用当前页面内存覆盖，并能感知其他标签页更新。没有引入 sessionStorage 备份与主存储的新旧竞争。
 
 限制：禁用浏览器存储时仅当前页面/SPA 可用内存草稿兜底，完整刷新或 OAuth 跨页无法保证恢复；无 IntersectionObserver 的浏览器不伪报曝光，仍可正常操作。生产埋点已抽样确认入库；真实 OAuth 成功、Stripe 付款、认领异常与长期增长指标仍需后续验收。
+
+## 关键词差异与 HTML 静态预览
+
+用户已发布 Console `804195c`、Backend `144d61f`；生产资源、三类预览事件和 v4 曝光于 2026-10-26 核验通过，见 [验收记录](verification.md#生产验收用户发布后)。下文观察期仍从实际上线曝光起计算，验收通过不表示搜索排名或收入已经改善。
+
+### 口径、清洗与页面归属
+
+2026-10-26 核验，报告日期为 2026-10-25、美国、桌面设备、自然搜索。用户截图比较 `previewship.com / tiiny.host / surge.sh / static.app / app.netlify.com`；浏览器现有报告第四竞品已换为 `htmlpub.com`。另开只读报告用 `netlify.com` 根域核对，没有修改用户原标签的竞品配置。
+
+| 对比口径 | 核验结果 | 使用限制 |
+| --- | --- | --- |
+| 用户截图，Netlify 子域 | PreviewShip 191，Tiiny 约 7.5K，Static 约 2.8K，Surge 567，app.netlify.com 357；尚未开发约 9.7K | 只提供前 3/98 页，不能当全量清单；Netlify 范围与其余根域不一致 |
+| 当前浏览器，HTMLPub 根域 | HTMLPub 175；尚未开发 9,506、所有 9,697、唯一 34 | 与截图属于不同竞品集合，不把差异解释为短期流量涨跌 |
+| 统一 Netlify 根域 | Netlify 约 20.7K；尚未开发 29,965、所有 30,156、唯一 18；缺失只有 1 | 唯一「缺失」词是 `static.app`（量 110、KD 60），属于品牌导航，不能据此扩写获客页 |
+
+Semrush 的「尚未开发」表示至少一个竞品有排名而本站未检出；「缺失」要求全部竞品有排名。「0」不证明 GSC 无曝光或网站未收录；搜索量不是可获得流量。根域报告可能混合官网、工具、博客和用户子站，未取得具体排名 URL 的词保留为待核验，不能自动认定为 UGC。定义参考 [Keyword Gap 官方说明](https://www.semrush.com/kb/28-keyword-gap)。当前报告全量导出显示套餐限制，未绕过；本次只完成已见样本的意图清洗与目标页实施，没有声称清洗全部约 3 万词。
+
+| 顺序 | 清洗后意图与代表词（截图月量 / KD） | 唯一主承接与本轮动作 |
+| --- | --- | --- |
+| P1-1 PDF 变分享链接 | `how to create a link to a pdf` 1.6K/14；`link to pdf` 1.9K/24 | `/guides/upload-pdf-online`：原文件→公开链接→账号保留；补专用三步、固定项目根 URL、原件仍是 PDF、密码应在分享敏感文件前设置；不做 PDF→HTML 转换页 |
+| P1-2 Claude 分享/导出 | `claude how to share an artifact` 1.9K/16；`how to download a claude design artifact` 1.9K/29 | `/guides/share-claude-html-artifacts` 负责分享方式；`/guides/claude-html-artifact-to-url` 负责导出/完整静态制品/排错，互链而不竞争同一篇教程 |
+| P1-3 HTML 文件上线 | `make html file into website` 1.9K/40 | 现有 upload、host、publish 三页分别回答准备文件、托管链接和发布检查；补资源路径/构建产物/长期保留边界，不增近义 URL |
+| P1-4 HTML 静态查看 | `html file viewer` 5.4K/35；`html viewer` 40.5K/66 | 先在现有 `/try` 与页内上传器增加真实本地预览，实验升级 v4，再从既有指南入口承接；不把无脚本静态查看包装成 JS runner 或完整 IDE |
+| P2 保持已有覆盖 | Markdown 发布、dist 静态构建、竞品比较 | 保留既有页面；观察业务转化再扩展，不按量批量造页 |
+| 暂不投入 | Wordle、coding fonts、CSV、解压、图片托管、JSON formatter、surge protector、品牌登录/优惠词 | 弱相关、另一产品意图或品牌导航。不能称所有这些都是用户子站；例如 Tiiny Wordle 存在自有博客，仍需转化证据再决定 |
+
+近义词的搜索量不可加总为独立市场规模。待后续可取得完整合法导出时，按「关键词、国家/设备/日期、真实排名 URL、页面类型、意图簇、唯一目标 URL、处理决定」补全；排除非业务意图后才以相关性、发布可能性、KD 和现有 GSC 位置排序。
+
+### 修改范围与验收
+
+| 优先级 | 实现范围 | 验收标准 |
+| --- | --- | --- |
+| P1 内容 | `public-content.ts` 六个既有英文指南及 PDF 工作流 | 标题/正文/FAQ/三步一致；原 PDF 不承诺转换；Claude 区分新版 Share、旧版 Publish 和 Design Export；期限/额度来自集中 facts；内部链接保留语言、有效 mode/intent 和营销白名单 |
+| P1 产品 | `GuestArtifactInput` 共用本地 HTML 预览 | 粘贴及单个 .html/.htm 文件可手动查看；不上传、不持久化源码、不改发布原文；桌面/手机切换与输入修改可重预览；空输入/读取失败/超限可恢复 |
+| P1 隔离 | 惰性 HTML 解析、标签/属性白名单、空 sandbox、CSP | 脚本、事件处理器、表单提交、导航、外链资源、嵌套页面均无法在本地预览执行；构造过程中也不外联；超 1 MiB 或节点/深度超限只拒绝预览，不缩水 15 MiB 游客发布额度 |
+| P1 埋点 | 前后端新预览事件准入与脱敏；`/try` 和页内上传父层上下文 | 实际 rendered 只在当前预览 iframe 加载后一次；旧文件迟到、切换/卸载不报成功；原文/文件名/密码/token/异常正文不进事件；INTERNAL 排除不变 |
+| P1 SEO/GEO | 复用既有 canonical、hreflang、结构化正文和索引策略 | 六页 SSG/客户端文案一致；不新增近义路由，不解除已确认 noindex，用户预览不为了流量开放索引；FAQ 回答真实能力并保留官方来源 |
+
+本地查看只呈现静态 HTML/CSS，1 MiB 是为控制浏览器解析资源设定的工具限制；脚本和外部资源需在用户主动发布后的独立预览链接验证。UI 必须在操作处说明差异，不能承诺本地效果与发布效果完全相同。此增量不改变配额、审核、认领、密码权限、计费或订阅价格。
+
+Claude 操作说明以 2026-10-26 读取的 [官方分享文档](https://support.claude.com/en/articles/9547008-share-artifacts)、[Artifacts 与导出](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them)、[Claude Code Artifacts](https://code.claude.com/docs/en/artifacts) 为准。界面可能随版本变化，区别说明比固定按钮位置更重要。
+
+### 埋点与效果判断
+
+| 事件 | 事实边界 | 维度与统计 |
+| --- | --- | --- |
+| `html_preview_requested` | 用户主动要求本地查看 | `preview_mode=static_sandbox_v1`、`input_mode=html/upload`、surface、page_id、locale、publish_intent；保留原有获客/会话身份 |
+| `html_preview_rendered` | 当前静态文档触发 iframe load，不代表脚本/业务效果正确 | 同一预览请求一次；不等于发布，不记入 SYSTEM READY |
+| `html_preview_failed` | 本地输入/读取/渲染失败 | `failure_reason` 仅 empty_input / input_too_large / file_read_failed / render_failed / unsupported_file；非法值归 unknown，不发送异常正文 |
+| 原有发布/认领/支付 | 提交与业务成功分离 | 点击和提交沿 CLIENT；READY、guest_claim_completed 和付款沿既有服务端事实/账本 |
+
+发布后按「落地页 × 语言 × 日期 × 来源」观察访问→预览请求→静态呈现→提交→SYSTEM READY→认领→成熟 7 日付费，保留每一步分子/分母与样本数。正文 CTA 沿 `cta_clicked` 并保留 `source_event_name`。同一身份可以多次预览，转化率按去重身份而非请求次数；本地失败率按请求统计并单列用户主动取消/换输入。
+
+GSC 的关键词/页面/国家/设备聚合与第一方落地页转化分开呈现；不把搜索词强行归到某个用户。历史经营数据只作基线，不能声称这次内容改动已经带来新增付款。页内实验升级 `content_inline_guest_uploader_v4`，继续 50/50；曝光去重、active exposure 存储和部署关联与 v3 隔离，不重写旧记录。`startedAt=2026-10-26` 是配置日期，实际观察从部署后的首次真实 v4 曝光开始，不能把发布前天数算进 14 日门槛。
+
+### 上线后执行顺序
+
+1. 发布当日：先后端事件兼容，再 Console；用合成非敏感 HTML 验证本地查看无制品上传、原文发布仍正常，抽样只读核对三事件和 SYSTEM READY。具体发布步骤见 release.md；本任务不自动提交/部署。
+2. 第一周：GSC 按三类意图及目标页记录展示、点击、CTR、平均位置，检查同意图页面是否互相替代；排名 URL 缺失与导出限制继续明确标记。
+3. 满 14 日且各臂至少 500 个身份：评估 v4 的成功发布率、错误率与区间，样本不足继续观察；不因单一关键词大搜索量新增功能。
+4. 满 28 日：比较相同完整窗口、成熟 7 日注册队列和付款账本。只有 HTML 静态预览能贡献有效发布/认领，且新搜索意图需要独立承接，才评估独立工具索引页；不提前承诺增长百分比。

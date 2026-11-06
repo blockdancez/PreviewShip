@@ -1,5 +1,63 @@
 # 2.0.1 实现与验证记录
 
+## 2026-11-06 生产 OOM 增量（本地）
+
+基线：Backend `144d61f`、根仓库 `4cbee07`，后端开始时干净；根目录已有版本文档改动，本轮保留。只读核对生产镜像 `prd_2026-10-26-17-58-55`：北京时间 10 月 16 日 23:59:43、11 月 4 日 04:14:25 两次内核 OOM 都与对应 Pod UID 对齐，均为 `CONSTRAINT_MEMCG` 和约 1 GiB 匿名内存。最近一次退出 137，约 52 秒后恢复 Ready；事发时文件缓存仅约 44 KiB，不能归因为节点全局 OOM 或文件缓存。
+
+当前生产进程确实使用 `Xms128m/Xmx512m`；重启前最后一次 GC 为 `461M→106M`，保留日志无 Full GC。调查时进程 RSS 约 844 MiB、堆提交 260 MiB、glibc 32 个分配区合计约 321 MiB（内部空闲约 212 MiB），支持原生内存保留是重要促成因素。缺少旧进程临终 NMT/allocator 快照，不能据此定位全部旧占用或断言某次业务请求造成泄漏；审核线程与 HTTP 写入分别是两次最后触发分配的位置。
+
+本地实现控制原生分配区与 NIO 缓存，并将真实快照写入分块；不改 Java 堆/容器上限、文件权益、审核结果、安全门禁或快照格式。参数唯一说明见 [上线](release.md#2026-11-06-生产-oom-增量上线)。
+
+| 范围 | 验证与边界 |
+| --- | --- |
+| 原生分配器对照 | 复用本地 Linux aarch64 Temurin 21.0.13 / glibc 2.43，1 GiB 内存及 swap 总上限、0.5 CPU；24 线程执行有界 `malloc/free`，每组 3 轮。默认/2/4 个分配区的 GC 后 RSS 中位数为 177.5/119.8/115.5 MiB，allocator 内部空闲为 112.0/54.5/49.6 MiB；分配阶段耗时中位数 1502/2001/1593 ms，据此选 4。它是机制对照，不是历史请求重放，不能外推生产节省量、GC 回归或业务吞吐 |
+| NIO 机制对照 | 同镜像写 100 MiB：默认线程 direct 缓存保留 100 MiB；仅限制缓存后降至约 8 KiB，但瞬时 RSS 高水位仍约 267 MiB；8 KiB 分块对照将高水位降至约 168 MiB。该实验分块与最终实现的 64 KiB 不同，数值不冒充最终应用峰值 |
+| 真实快照回归 | 新增独立子 JVM，512 MiB 堆和 8 MiB direct 上限，调用实际快照服务写入约 100 MiB−17 字节。修前因申请 104857583 字节 direct buffer 失败；64 KiB 分块后完成写入、审核选择性读取、完整恢复、所有文件字节/哈希及删除校验。包含中文文件名、空 JS、最后不足一块；未设置缓存阈值来掩盖原写法的瞬时分配 |
+| Linux 快照回归 | 将编译后的实际服务/测试类在上述 Linux 镜像中再次运行：1 GiB 容器、0.5 CPU、512 MiB 堆、8 MiB direct 上限、无外网，退出 0 / `SNAPSHOT_REPLAY_COMPLETED` |
+| 后端完整测试与打包 | macOS Java 21.0.9：`mvn -q clean package` 退出 0；Surefire **1,085 项，1,070 通过、15 条件跳过、失败/错误 0**，产出实际 JAR。跳过为 7 项显式真实 OpenRouter 和 8 项显式 PostgreSQL 集成环境用例，不计为通过 |
+| 全应用发布与审核 | 实际新 JAR、生产 profile、本地 PostgreSQL 16 / Redis 7.2、Linux `eclipse-temurin:21-jre`，按 Dockerfile 读取新参数，1 GiB / 0.5 CPU；独立无外网 Docker 网络，仅使用合成数据和空外部凭据。全新库 42 条迁移成功、最新 V44。依次小文件→100 MiB HTML→小文件→100 MiB HTML→100 MiB HTML，**5 次均 READY、后台审核均 COMPLETED/PASS**。三份大预览文件为 104858025 字节，正文与品牌结尾实际核对；应用 ERROR 0、OOM 0、重启 0 |
+| 内存余量与限制 | 全应用进程 RSS 高水位最终约 **816 MiB**，匿名内存约 **794 MiB**；文件缓存约 222–233 MiB。cgroup 总内存曾触及 1 GiB，并出现 `memory.events.max` / 回收，`oom/oom_kill` 均为 0，因此不能声称“从未触及限额”。连续三份大制品未出现每份约 100 MiB 的线性保留；短时数据不能证明长期无泄漏或生产永不 OOM |
+
+全应用仅验证后端 HTTP→队列/Worker→实际预览文件→后台本地审核，没有运行公网预览 nginx、真实 OpenRouter、邮件或付款；Linux 验证使用现有 JRE 镜像，并未构建/验收最终生产 JDK 镜像，且与生产 amd64 / Temurin 21.0.12.1、长期流量不同。不得将局部通过视为生产长期验收，发布后的完整峰值及持续运行观察按上线说明执行。
+
+原始日志、合成 ZIP 和诊断脚本放仓库外；测试只使用本轮创建的独立容器/数据库/存储，收尾清理对应容器、网络及大制品，不影响既有资源。本轮未连接生产执行变更，未提交或部署。根仓库与 Backend 的 `git diff --check` 通过，无新增依赖、数据库 SQL、临时脚本或日志入 Git。
+
+## 2026-10-26 关键词承接与本地静态预览（本地）
+
+代码基线为根 `4cbee07`、Console `b660e2a`、Backend `d6117bd`，开始时三仓干净；结果对应其上未提交增量。复杂实现由内容、预览和事件代理分工，另做独立安全/异步评审；未部署、提交、发行包、写共享数据库或产生真实付款。
+
+| 范围 | 命令／环境与结果 |
+| --- | --- |
+| Console 全量回归 | Node 24：`node --test scripts/*.test.mjs`，**360/360 通过**；涵盖原发布、认领、支付、风险提示、内容、实验和新静态预览输入边界 |
+| 类型、lint 与生产构建 | `npm run lint`、`INDEXNOW_ENABLED=false npm run build` 通过，含 TypeScript、SSG 和 SEO 校验；IndexNow 未提交。保留既有 chunk >500 kB 提示，本轮不扩大无关分包改造 |
+| Backend 事件兼容 | Java 21：`mvn -q -Dtest=PublicProductEventGateTest,ProductEventServiceTest,ProductEventControllerTest test`，**34/34 通过**；公开准入、枚举归一/脱敏、INTERNAL 排除与 SYSTEM 结果保护；本增量未重跑无关完整后端压力测试 |
+| 真实浏览器安全 | Node 24，`PLAYWRIGHT_MODULE=<已安装的 playwright 模块入口> node scripts/html-local-preview.browser.mjs` 通过；仅本机合成 fixture。脚本/事件处理器、meta refresh、iframe、表单、链接、外链图片/CSS 均被禁用；解析与渲染引发的外部请求 **0**；body class/style、data 栅格图像保留 |
+| 组件边界 | 原文未改变；空值、读取失败、1 MiB UTF-8 字节/节点/深度限制、切模式/换文件/卸载后的迟到结果、重复 load 去重、埋点失败不阻断均通过；外层 html 属性、SVG/嵌入内容不属于本地简化预览保证 |
+| 实际页面 | 本机 Vite + 匿名 API fixture，不提供部署/付款接口；Chrome 桌面和 **390×844** 手机验证，文档宽 375、预览框宽 307，无横向溢出。预览真实呈现、控件禁用、清空后错误恢复；实际请求接收端看到 requested/rendered/failed 与页面/语言/模式/意图，未看到原文上传 |
+
+评审中已修复：完整 HTML 的 body 样式丢失；v3/v4 实验污染；游客本地校验失败缺来源维度；上下文 CTA 查询参数与语言处理；PDF meta description 超长；英文更新日期污染未更新译文。PDF 能力同时对照后端 `PdfRenderService`：链接使用原 PDF 和浏览器阅读能力，不宣称转换/批注/编辑。内容能力边界与实际渲染/SEO 断言对齐，脆弱的源码字符串断言改为最终链接行为验证。
+
+最终 sitemap 仍为 **289 条 URL**，未增删。`lastmod` 的变化从误继承的 32 条收敛为 8 条：英文 Publish HTML / PDF 两页实际更新；其余六条校正原 sitemap 忽略已有译文日期的问题（西语 VS Code / Claude Code / Cursor 指南、韩语 Host HTML、日语及西语 Publish HTML File to Web）。全部内容页的 sitemap 日期与 SSG `TechArticle.dateModified` 已加入构建一致性校验。
+
+限定：浏览器事件请求由本机 fixture 接收，后端测试使用 mock Repository，**不等于生产持久化验收**；浏览器实际验收为 Chromium，未宣称 Firefox/WebKit 已验。本地预览不运行用户脚本/外链，发布后的完整交互仍由原发布流程和后续上线验收覆盖。全量关键词导出受套餐限制，只对已见样本和统一域名口径做决策，不把全部「尚未开发」算作已清洗。原始日志、OCR、截图和本机 fixture 均留仓库外。
+
+### 生产验收（用户发布后）
+
+用户发布 Console `804195c`、Backend `144d61f` 后，完成截至北京时间 2026-10-26 18:28 的核验。本轮仅通过产品页面产生合成非敏感预览交互和只读查询，没有提交/重新部署、注册、付款、认领、发信、触发模型或直接写库。浏览器复用的历史合成游客草稿保持不动；没有把其已有「Preview is live」结果当作本轮创建成功。
+
+| 范围 | 生产证据与结果 |
+| --- | --- |
+| 后端实例 | `prd/previewship` 镜像 `prd_2026-10-26-17-58-55`；generation/observed=156，Updated/Ready/Available=1/1/1。Pod 北京时间 18:01:34 启动、18:02:43 Ready，重启 0；启动以来所查日志 176 行，WARN/ERROR 0（截至 18:14:25） |
+| 实际代码 | 生产 JAR 的 `PublicProductEventGate / ProductEventService / ProductEventController` 三个类 SHA256 与当前本地编译结果相同。六个英文指南及 `/try` 的生产 HTML、主包 `main-tP6OFQpW.js`、预览包 `guest-artifact-input-CVEga3QI.js` 均与本地 `dist` 字节一致，确认预览与事件契约实际上线 |
+| SEO | 六页 canonical、索引指令、TechArticle/Breadcrumb/FAQ/HowTo 通过；description 131–154。Sitemap **289 条**且与本地字节一致；8 个译文样本日期与 SSR 一致。检查范围内 hreflang 无重复、目标在 sitemap、x-default 正确，响应头无额外 noindex |
+| 实际交互 | 生产 `/try` 空输入显示可恢复提示；合成完整 HTML 呈现标题/样式，脚本不执行、按钮禁用，iframe `sandbox=""`。390×844 手机断点文档宽 375、iframe 宽 307，无横向溢出；所查页面浏览器 WARN/ERROR 为空 |
+| CTA | PDF 正文 CTA 最终进入 `mode=file&intent=pdf`；Claude 主 CTA 最终进入 `mode=html&intent=paste-html`，均保留当前 `utm_source/utm_campaign`。首次静态 SSR 未包含访问者查询参数属于预期，验收以水合后实际点击落点为准 |
+| 新事件入库 | PostgreSQL `REPEATABLE READ READ ONLY`，确认 `transaction_read_only=on`，UTC 解读无时区时间。快照 UTC **10:25:59**：本轮测试获客身份下 `html_preview_requested=3`、`rendered=2`、`failed=1`（empty_input）。schemaVersion=2，page_id/locale/input_mode/publish_intent/preview_mode 齐全，项目/部署 ID 为空；敏感字段与异常预览模式计数均 0。后续截图刷新仍属于预览交互，上述是快照时计数 |
+| v4 | UTC **10:24:26** 真实可视曝光入库：`experiment_id=content_inline_guest_uploader_v4`、`page_id=/guides/share-claude-html-artifacts`、locale=en、variant/control、exposure_method=viewport_v1。样本只证明新版本开始正常记录，不足以评估效果 |
+| 无误发布 | 相同测试获客身份在发布后窗口的 deploy_submitted / deployment_ready / guest_deployment_created / guest_claim_completed 均为 0；UTC **10:26:30** 直接只读核对 deployments：新部署、新游客部署、新 READY 均 0，预览操作没有创建或覆盖已有部署 |
+
+本次未发现阻断本轮上线的问题。没有重新创建公开制品验证线上 JS/外链、真实 OAuth/付款或其他安全处置分支；Firefox/WebKit 和长期 SEO/转化仍未验收。Flyway 已有 42 条成功记录、最新 V44，本增量无迁移。原始脱敏证据和手机截图放仓库外 `/tmp/previewship-production-seo-20261026/`、`/tmp/previewship-keyword-prod-class-summary.json`、`/tmp/previewship-keyword-prod-backend.log`；不归档凭据或匿名设备标识。
+
 ## 2026-10-26 审核终态一致性补修（本地）
 
 用户授权修复生产验收发现的 P1；本地基线 Console `1fadd68`、Backend `462c83d`，本节记录其上未提交修改。使用 diagnose 的先失败后修复流程，并由独立协作复审单次/分组状态机及客户端遗漏；没有再次读取用户制品、请求真实模型、发送邮件、写共享数据库、提交代码或部署生产。
