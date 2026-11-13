@@ -300,3 +300,10 @@
 - 独立静态评审发现合并账号封禁仅查单项目撤销状态的问题，已修正并加入事务回归；账号→项目锁顺序及旧通知消费者兼容边界均已复核。根仓库、Backend、Console `git diff --check` 通过。
 
 尚未验收：V44 在生产执行、全部后端实例更新、Console 线上弹窗、真实 Resend 受理/收件箱投递与支持邮箱回复。滚动升级时暂停管理员封禁/可信投诉登记，全部后端更新后才产生新来源任务，避免旧消费者读取 check_id 为空的管理员通知；详细操作见 release.md 最新小节。
+
+## 2026-11-13 API 文档增量（本地）
+
+- 基线：根仓库 `d6c6a0b`、Backend `a3c44a7`、Console `804195c`，含本次未提交修改；仅文档与前端内容变更，无新增 SQL；本地 Node 20.19.5。
+- Console `npm run build` 通过 TypeScript、Vite 构建和公开 SEO 校验；IndexNow 未启用。针对相关页面的 ESLint 通过，`node --test scripts/core-content-cluster.test.mjs scripts/public-index-policy.test.mjs scripts/structured-data.test.mjs` 通过 14 项。
+- 本地浏览器检查中文总文档中的上传及查询示例、跳转英文 `/docs/api`，并验证详细指南切换中文时返回中文总文档。API Key 管理页需登录，本次未做已登录浏览器验收。
+- 上传字段、访问方式和异步状态依据本地后端与 CLI 实现核对；未使用真实 API Key 发起生产部署，未验证线上文档、API 调用或发布结果。

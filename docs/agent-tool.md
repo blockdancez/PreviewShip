@@ -686,8 +686,10 @@ Content-Type: multipart/form-data
 X-API-Key: ps_live_xxx
 
 projectName: my-project
-file: (binary zip data)
+zip: (binary zip data)
 ```
+
+`zip` 是上传字段名，也可上传单个 HTML、Markdown 或 PDF 文件。可选字段 `visibility` 支持 `PUBLIC` 或 `PASSWORD`；密码访问需符合账号权益，并可通过 `password` 设置密码。未传访问方式时，新项目默认公开，已有项目保留原访问方式。
 
 **成功响应（201）：**
 ```json
