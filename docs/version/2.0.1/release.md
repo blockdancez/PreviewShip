@@ -1,5 +1,21 @@
 # 配置、上线与回滚
 
+## 2026-11-16 审核中转端点配置
+
+在 `application.yml` 的 `previewship.content-risk` 下配置：
+
+```yaml
+# 完整请求地址，不自动追加 /v1 或 /chat/completions。
+openrouter-url: ${OPENROUTER_URL:https://openrouter.ai/api/v1/chat/completions}
+openrouter-api-key: ${OPENROUTER_API_KEY:}
+```
+
+可以直接将这两个配置改成中转平台使用的值；保留占位符时，也可通过 `OPENROUTER_URL` / `OPENROUTER_API_KEY` 注入。URL 允许 HTTP/HTTPS，空值、缺主机或非法 URL 在启动绑定时失败，不回退其它地址；主模型、备用纠正模型和各审核批次共用此端点。密钥读取次序保持配置值→`OPENROUTER_API_KEY`→本机 `FUBB_OPENROUTER_API_KEY`。
+
+当前生产 profile 不覆盖这两个配置；若以后在 `application-prod.yml` 或外部配置中设置同名属性，应按 Spring 的实际覆盖次序确认最终值。配置不是热更新：修改 JAR 内 YAML 后需构建/发布新镜像，修改环境配置后需更新后端进程才能生效。
+
+本次只将既有端点配置化，保留 Bearer、模型与备用模型设置、请求/响应及 schema、provider 扩展参数、本地证据校验、预算和重试契约。中转平台的实际协议支持尚未验证，需由真实端点的合成审核验收确认；没有更改生产配置、凭据或存量审核状态。无 SQL、前端或客户端联动，也不会自动补审历史终态 UNKNOWN。验证见 [验收记录](verification.md#2026-11-16-审核中转端点配置本地)。
+
 ## 2026-10-26 关键词承接与本地静态预览上线
 
 本增量基于根 `4cbee07`、Console `b660e2a`、Backend `d6117bd`；用户随后发布 Console `804195c`、Backend `144d61f`，生产镜像 `prd_2026-10-26-17-58-55`。公开产物、真实静态预览、新事件入库与 v4 曝光已验，见 [验收记录](verification.md#2026-10-26-关键词承接与本地静态预览本地)。内容与实验方案见 [增长转化优化](growth-optimization.md#关键词差异与-html-静态预览)。

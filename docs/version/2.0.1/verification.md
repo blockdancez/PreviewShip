@@ -1,5 +1,17 @@
 # 2.0.1 实现与验证记录
 
+## 2026-11-16 审核中转端点配置（本地）
+
+基线 Backend `a3c44a7`，开始时后端干净，根仓库已有 API 文档改动，本轮保留。按用户确认的自建兼容中转用法，移除客户端硬编码端点，绑定可编辑 YAML 的完整 URL 与既有 key；本轮没有读取或修改生产配置/凭据，也未请求真实模型或中转平台。
+
+- 原问题回归先失败：配置自定义前缀 URL 后，实际传输调用仍收到旧 OpenRouter URL；修后主模型及备用纠正模型均收到配置 URL 和合成 key，完整路径不被重写，严格 schema 仍保留。
+- 实际加载 `application.yml` 与 `application-prod.yml` 验证绑定；支持配置字面量及占位符环境覆盖。旧默认兼容单独测试，不要求用户可编辑 YAML 保留旧域名/空 key。空地址、相对路径、非 HTTP(S)、缺主机和非法地址均导致启动失败。
+- 显式启用的真实模型测试也改为读取应用配置，避免切换中转后仍携带新 key 访问旧端点；本轮仅编译，未开启真实调用。
+- Java 21 下 `mvn -q -Dtest=ContentRiskPropertiesTest,OpenRouterContentRiskClientTest,ContentRiskBatchClientTest,ContentRiskPromptPlanTest,ContentRiskPersistenceTest package` 退出 0：**136 项通过，失败/错误/跳过均为 0**。覆盖配置 4 项、客户端 58 项、分批 6 项、预算计划 15 项、审核持久化 53 项；最终 JAR 已包含新 URL 配置。
+- 独立静态复核及根仓库/Backend 的 `git diff --check` 通过。请求格式、provider 参数、模型标识、预算与安全判定保持现有契约；mock 和本地 H2 结果不等于真实中转支持或生产验收。本轮未重跑无关完整压力测试。
+
+无新增依赖或 SQL，尚未提交或部署，不会自动补审存量终态 UNKNOWN。配置、生效方式及真实端点验收边界见 [上线说明](release.md#2026-11-16-审核中转端点配置)。
+
 ## 2026-11-06 生产 OOM 增量（本地）
 
 基线：Backend `144d61f`、根仓库 `4cbee07`，后端开始时干净；根目录已有版本文档改动，本轮保留。只读核对生产镜像 `prd_2026-10-26-17-58-55`：北京时间 10 月 16 日 23:59:43、11 月 4 日 04:14:25 两次内核 OOM 都与对应 Pod UID 对齐，均为 `CONSTRAINT_MEMCG` 和约 1 GiB 匿名内存。最近一次退出 137，约 52 秒后恢复 Ready；事发时文件缓存仅约 44 KiB，不能归因为节点全局 OOM 或文件缓存。
@@ -307,3 +319,27 @@
 - Console `npm run build` 通过 TypeScript、Vite 构建和公开 SEO 校验；IndexNow 未启用。针对相关页面的 ESLint 通过，`node --test scripts/core-content-cluster.test.mjs scripts/public-index-policy.test.mjs scripts/structured-data.test.mjs` 通过 14 项。
 - 本地浏览器检查中文总文档中的上传及查询示例、跳转英文 `/docs/api`，并验证详细指南切换中文时返回中文总文档。API Key 管理页需登录，本次未做已登录浏览器验收。
 - 上传字段、访问方式和异步状态依据本地后端与 CLI 实现核对；未使用真实 API Key 发起生产部署，未验证线上文档、API 调用或发布结果。
+
+## 2026-11-13 API 参考补全（本地）
+
+- 基线：根仓库 `4920d6b`、Backend `a3c44a7`、Console `ad3c6aa`，含本次未提交修改；本机 Node 20.19.5。本次无后端契约、配置或 SQL 变更。
+- Console `INDEXNOW_ENABLED=false npm run build`、受影响文件 ESLint 通过；API 参考、公开内容索引及结构化数据相关测试 15 项通过。构建输出的八语言 `/docs/api` 均有 13 个接口、对应语言、canonical 和 8 个 hreflang。
+- Backend 使用 `mvn -q -Dtest=PluginApiControllerTest,ProjectAccessServiceTest,ProjectVersionServiceTest,DeployServiceRedeployLatestTest,ContentCheckManualRetryTest,ContentRiskApiContractTest test`，50 项通过；这些测试验证本地实现，不证明生产部署版本。
+- 本地浏览器检查中文及西班牙语完整参考页、语言切换和窄屏目录布局。API Key 管理页的登录后跳转未做浏览器验收；未使用真实 Key 发起部署或其他状态变更，也未提交或部署。
+- 枚举及字段细节增量：Console 基线 `67bea82`，含本次未提交修改。对照 Backend `a3c44a7` 的控制器、服务、枚举和迁移，补充八语言 17 组字段值、常见错误、可空和异步行为；扩展 API 参考测试直接比对后端枚举及审核约束。`INDEXNOW_ENABLED=false npm run build`、受影响文件 ESLint 和相关测试 15 项通过；八语言预渲染页均检查查询部署旁的七种状态、17 组释义及 canonical/hreflang。本地浏览器验证中文状态释义锚点和日文切换。未调用生产写接口，未提交或部署。
+# 2026-11-16 Lumi 外链本地
+
+- 基线：当前 Console 工作区修改；首页及使用 `PublicShell` 的公开页面页脚提供八语言 Lumi 外链，包含 `utm_source=previewship`、`utm_medium=referral`、`utm_campaign=product_link`。不涉及后端或 SQL。
+- 本地 `INDEXNOW_ENABLED=false npm run build` 和本次涉及文件的 ESLint 通过；构建包含现有公共 SEO 校验。分别检查八语言首页和 API 参考共 16 个预渲染 HTML，页脚链接、翻译和 UTM 均正确。
+- 本地浏览器从中文首页及 API 参考页点击后，均到达 Lumi 中文页面且 UTM 保留；使用本地模拟事件接口观察到两处 `cta_clicked`，其 `target=lumi`，`location` 分别为 `landing_footer`、`public_footer`，`source_event_name=public_footer_click`。
+- 尚未提交、部署或验证生产事件入库；Lumi 端 UTM 归因及后续注册、付费转化未验证。发布后应检查生产页面跳转与事件接收。
+
+## 2026-11-17 英文 Host / Upload（本地）
+
+- 基线：根仓库 `4920d6b`、Console `9b1d277`、Backend `e2298f7` 加本次增量；保留原有版本文档修改。仅 Console 两条英文指南及其测试/sitemap 变更；无后端、配置、迁移或价格变更，未提交或部署。
+- Node `v24.22.1` 下 Console `npm run test:unit` **361/361 通过**；受影响文件 ESLint 和 `INDEXNOW_ENABLED=false npm run build` 通过类型、生产构建、SSG 与完整 SEO 校验。构建仅保留既有大 chunk 提示，未发送 IndexNow。主代理独立复跑内容 SSR/核心页面两份测试，**9/9 通过**；根仓库及 Console `git diff --check` 通过。
+- 独立核对 16 份 SSG：两页英文链接的 file/upload-html、html/paste-html 模式准确，日期与 TechArticle/sitemap 一致；全部 14 个对应译文保持原日期和语言。sitemap 与 HEAD 逐 URL 对比仅两条英文 lastmod 变化。
+- 本地浏览器在开发服务验收 Upload 粘贴链接进入 HTML 模式并保留 UTM、过滤私密参数；Host 文件链接进入 File 模式；项目名确为可选。API 通过进程环境指向 `http://127.0.0.1:9`，未发送生产埋点或实际发布、认领、付款请求。浏览器检查不替代生产验收。
+- GSC 只读核对固定 28 日对比、可见匹配查询、连续 56 日逐日表、两页 Google 索引/规范页选择与安全通知时间线；未点击 Request indexing、Request review 或 Test live URL。证据、数字与不可归因边界统一维护在 [增长转化优化](growth-optimization.md#2026-11-17-英文-host--upload-排查与本地优化)。
+- 业务核对仅使用 PostgreSQL 强制只读、REPEATABLE READ 事务，并断言 `transaction_read_only=on`；固定统计截止 2026-11-17 08:00 UTC。两次大查询触发 45 秒保护超时后取消，最终缩减相关身份与必要属性、只读游标分批传输，再在本机内存计算；没有临时表、回填、生产写入或保存身份明细。临时脚本/聚合在仓库外 `/tmp/previewship-seo-audit-20261117/`，不是交付 SQL 或新运行依赖。
+- 同一份本地计算代码通过合成输入边界验证：身份桥合并、内部排除、两页互斥、删除后保留 READY、迟到事件关联旧部署时不伪造新发布、客户端 submit 缺失、认领七日边界、历史回填首付排除续费，以及首付/退款固定窗口与截至日窗口的差异。统计逻辑另经独立审阅；观测相关性不作为页面修订产生增长的证明。
