@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.blockdancez/previewship",
+  "title": "PreviewShip MCP",
+  "description": "Deploy HTML, Markdown, PDF, and static build output to fixed shareable PreviewShip preview URLs.",
+  "version": "1.0.14",
+  "websiteUrl": "https://previewship.com/docs/mcp",
+  "repository": {
+    "url": "https://github.com/blockdancez/PreviewShip",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "previewship-mcp",
+      "version": "1.0.14",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PREVIEWSHIP_API_KEY",
+          "description": "PreviewShip API key (ps_live_...) from previewship.com Console.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
