@@ -15,6 +15,7 @@ test('实际 CLI 发布在全部终态结束并保留失败码与整改证据', 
   let code = 'CONTENT_RISK_HIGH';
   let reads = 0;
   let retryingFirst = false;
+  let contentCheckRetryAvailable = false;
   const review = {
     status: 'COMPLETED', decision: 'HOLD', riskLevel: 'HIGH', score: 95,
     policyVersion: 'fixture', contentHash: 'fixture', notificationStatus: 'PENDING',
@@ -34,7 +35,8 @@ test('实际 CLI 发布在全部终态结束并保留失败码与整改证据', 
         return;
       }
       response.end(JSON.stringify({ deploymentId: 101, projectName: 'fixture', status, failureCode: code,
-        previewUrl: status === 'READY' ? 'https://fixture.example.test/' : null, errorMessage: 'Fixture result', contentRisk: review }));
+        previewUrl: status === 'READY' ? 'https://fixture.example.test/' : null, errorMessage: 'Fixture result',
+        contentRisk: review, contentCheckRetryAvailable }));
     }
   });
   try {
@@ -61,6 +63,28 @@ test('实际 CLI 发布在全部终态结束并保留失败码与整改证据', 
     code = 'CONTENT_CHECK_UNAVAILABLE';
     const unavailable = await deploy({ path: path.join(directory, 'index.html') });
     assert.equal(unavailable.error.code, 'CONTENT_CHECK_UNAVAILABLE');
+    contentCheckRetryAvailable = true;
+    review.decision = 'UNKNOWN';
+    review.riskLevel = 'UNKNOWN';
+    const originalFindings = review.findings;
+    review.findings = [{ reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', file: '', line: 0 }];
+    const opaque = await deploy({ path: path.join(directory, 'index.html') });
+    assert.match(opaque.error.message, /has not gone live/);
+    assert.doesNotMatch(opaque.error.message, /Retry without uploading/);
+    review.findings = [{ reasonCode: 'RISK_EVIDENCE_PENDING', file: '', line: 0 }];
+    const riskPending = await deploy({ path: path.join(directory, 'index.html') });
+    assert.doesNotMatch(riskPending.error.message, /Retry without uploading/);
+    review.findings = [{ reasonCode: 'CONTENT_CHECK_UNAVAILABLE', file: '', line: 0 }];
+    const technical = await deploy({ path: path.join(directory, 'index.html') });
+    assert.match(technical.error.message, /Retry without uploading/);
+    status = 'BLOCKED';
+    code = 'CONTENT_RISK_RECHECK_PENDING';
+    review.findings = [{ reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', file: '', line: 0 }];
+    const restricted = await deploy({ path: path.join(directory, 'index.html') });
+    assert.match(restricted.error.message, /Access remains restricted/);
+    assert.doesNotMatch(restricted.error.message, /Retry without uploading|Fixture result/);
+    review.findings = originalFindings;
+    contentCheckRetryAvailable = false;
     status = 'READY';
     review.decision = 'PASS';
     review.riskLevel = 'MEDIUM';

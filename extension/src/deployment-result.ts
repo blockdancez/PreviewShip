@@ -14,21 +14,27 @@ export function deploymentFailure(detail: DeploymentDetail): { message: string; 
   const rechecking = ['PENDING', 'CHECKING', 'RETRYING'].includes(review?.status ?? '');
   const code = detail.failureCode || (restricted && detail.contentRisk?.decision === 'HOLD'
     ? 'CONTENT_RISK_HIGH' : `DEPLOYMENT_${detail.status}`);
+  const waitingForRecheck = rechecking || restoring && !opaque;
   const title = code === 'CONTENT_RISK_HIGH' ? restricted
     ? 'Preview access restricted: high-risk content needs changes.'
     : 'Publish paused: high-risk content needs changes.'
     : code === 'CONTENT_RISK_VERSION_REVOKED' ? 'This historical version has been withdrawn. Open the current version or publish a correction.'
-    : code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
+    : code === 'CONTENT_RISK_RECHECK_PENDING' ? rechecking
+      ? 'Preview access is temporarily restricted pending automatic safety verification.'
+      : opaque
       ? 'Preview access is restricted: encoded active content could not be fully inspected.'
       : restoring
       ? 'Safety recheck passed: preview access is being restored.'
-      : rechecking ? 'Preview access is temporarily restricted pending automatic safety verification.'
       : 'Preview access remains restricted: the safety recheck is unresolved.'
-    : code === 'CONTENT_CHECK_UNAVAILABLE' ? 'Publish paused: the required safety check is incomplete.'
+    : code === 'CONTENT_CHECK_UNAVAILABLE' ? opaque
+      ? 'Publish paused: encoded active content could not be fully inspected.'
+      : 'Publish paused: the required safety check is incomplete.'
       : detail.errorMessage || `Deployment ended with status ${detail.status}.`;
   const reviseInput = review?.findings.some((finding) =>
-    ['CONTENT_CHECK_LIMIT_EXCEEDED', 'CONTENT_CHECK_ENCODING_UNSUPPORTED'].includes(finding.reasonCode));
-  const findings = review?.findings.flatMap((finding) => [
+    ['CONTENT_CHECK_LIMIT_EXCEEDED', 'CONTENT_CHECK_ENCODING_UNSUPPORTED',
+      'CONTENT_CHECK_REVIEW_REQUIRED', 'CONTENT_RISK_REVIEW_REQUIRED', 'RISK_EVIDENCE_PENDING'].includes(finding.reasonCode));
+  // 自动复核期间隐藏历史整改建议，避免用户和复核任务重复提交。
+  const findings = code === 'CONTENT_RISK_RECHECK_PENDING' && rechecking ? [] : review?.findings.flatMap((finding) => [
     `${finding.file ? `${finding.file}${finding.line > 0 ? `:${finding.line}` : ''}: ` : ''}${finding.reason}`,
     finding.suggestion ? `Suggested fix: ${finding.suggestion}` : '',
   ]) ?? [];
@@ -39,15 +45,17 @@ export function deploymentFailure(detail: DeploymentDetail): { message: string; 
       code === 'CONTENT_RISK_HIGH' ? restricted
         ? 'Revise the files and publish a correction to restore access.'
         : 'Revise the files and publish again. This version was not published.' : '',
-      code === 'CONTENT_CHECK_UNAVAILABLE' ? reviseInput
-        ? 'Revise the files as suggested, then submit the check again. This version has not gone live.'
-        : detail.contentCheckRetryAvailable
+      code === 'CONTENT_CHECK_UNAVAILABLE' ? opaque
+        ? 'Remove obfuscation or provide readable code, then publish again. This version has not gone live.'
+        : reviseInput
+        ? 'Revise the files as suggested, then publish again. This version has not gone live.'
+        : detail.status === 'FAILED' && detail.contentCheckRetryAvailable && (!review || review.status === 'COMPLETED' && review.decision === 'UNKNOWN')
           ? 'Your upload is saved. Open the console to retry the safety check without uploading again. This version has not gone live.'
           : 'Open the console for recovery options. This version has not gone live.' : '',
-      code === 'CONTENT_RISK_RECHECK_PENDING' ? opaque
-        ? 'Remove obfuscation or provide readable code, then publish a correction in the same project.'
-        : restoring || rechecking
+      code === 'CONTENT_RISK_RECHECK_PENDING' ? waitingForRecheck
         ? 'No re-upload is needed. Open the console to follow the automatic recheck and restoration.'
+        : opaque
+        ? 'Remove obfuscation or provide readable code, then publish a correction in the same project.'
         : 'The safety recheck has not confirmed this version is safe. Revise the content and publish a correction in the same project.' : '',
       review?.decision === 'HOLD' && review.notificationStatus === 'ACCEPTED' ? 'The email service accepted the remediation notice; delivery is not yet confirmed.' : '',
       review?.decision === 'HOLD' && (review.notificationStatus === 'PENDING' || review.notificationStatus === 'RETRYING') ? 'The remediation notice is pending or retrying. Use these findings for now.' : '',

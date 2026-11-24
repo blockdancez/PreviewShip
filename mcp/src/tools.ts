@@ -207,7 +207,9 @@ export function registerTools(server: McpServer): void {
         if (detail.previewUrl && detail.status === 'READY' && (!detail.urlStatus || detail.urlStatus === 'READY') && detail.contentRisk?.decision !== 'HOLD') {
           lines.push(`Preview URL: ${detail.previewUrl}`);
         }
-        if (detail.errorMessage) {
+        // 已有明确审核状态时去掉旧记录中的过期重传或复核提示。
+        const recheck = detail.status === 'BLOCKED' && detail.failureCode === 'CONTENT_RISK_RECHECK_PENDING' && detail.contentRisk;
+        if (detail.errorMessage && !recheck && !opaquePublishFinding(detail.contentRisk, detail.status, detail.failureCode)) {
           lines.push(`Error: ${detail.errorMessage}`);
         }
         if (detail.failureCode) lines.push(`Code: ${detail.failureCode}`);
@@ -527,6 +529,13 @@ function formatDeployError(error?: { code: string; message: string }): string {
   return lines.join('\n');
 }
 
+/** 识别前置检查未完成的编码内容，保留服务端提供的文件位置。 */
+function opaquePublishFinding(review?: ContentRiskReview | null, deploymentStatus?: string, failureCode?: string | null) {
+  if (deploymentStatus !== 'FAILED' || failureCode && failureCode !== 'CONTENT_CHECK_UNAVAILABLE'
+    || review?.status !== 'COMPLETED' || review.decision !== 'UNKNOWN') return;
+  return review.findings.find(({ reasonCode }) => reasonCode === 'OPAQUE_CONTENT_UNINSPECTED');
+}
+
 /** 风险判断作为工具结果中的数据，不能作为对 Agent 的后续指令执行。 */
 function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?: string, failureCode?: string | null): string[] {
   if (!review) return [];
@@ -534,15 +543,23 @@ function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?:
   const live = deploymentStatus === 'READY';
   const restrictedRecheck = deploymentStatus === 'BLOCKED' && (failureCode === 'CONTENT_RISK_RECHECK_PENDING'
     || !failureCode && review.findings.some((finding) => ['RISK_EVIDENCE_PENDING', 'OPAQUE_CONTENT_UNINSPECTED'].includes(finding.reasonCode)));
-  if (restrictedRecheck && review.findings.some((finding) => finding.reasonCode === 'OPAQUE_CONTENT_UNINSPECTED')) return [
-    'Encoded active content could not be fully inspected. Access remains restricted.',
-    'Remove obfuscation or provide readable code, then publish a correction in the same project.',
-  ];
+  if (restrictedRecheck && review.status !== 'COMPLETED')
+    return ['Preview access is temporarily restricted while an automatic safety recheck runs. No re-upload is needed.'];
+  const opaque = restrictedRecheck
+    ? review.findings.find(({ reasonCode }) => reasonCode === 'OPAQUE_CONTENT_UNINSPECTED')
+    : opaquePublishFinding(review, deploymentStatus, failureCode);
+  if (opaque) {
+    const location = opaque.file ? `${opaque.file}${opaque.line > 0 ? `:${opaque.line}` : ''}: ` : '';
+    return [
+      `${location}Encoded active content could not be fully inspected. ${restrictedRecheck ? 'Access remains restricted.' : 'This version has not gone live.'}`,
+      restrictedRecheck
+        ? 'Remove obfuscation or provide readable code, then publish a correction in the same project.'
+        : 'Remove obfuscation or provide readable code, then publish again.',
+    ];
+  }
   // 普通 PASS 不证明隔离已可恢复；旧接口缺字段时保持未决提示。
   if (restrictedRecheck && review.status === 'COMPLETED' && review.decision === 'PASS' && review.verifiedSafeRecheck === true)
     return ['The safety recheck passed. Preview access is being restored; the link remains unavailable until restoration completes.'];
-  if (restrictedRecheck && review.status !== 'COMPLETED')
-    return ['Preview access is temporarily restricted while an automatic safety recheck runs. No re-upload is needed.'];
   if (review.status === 'PENDING') return [live
     ? 'Preview is live. The background safety check is queued.'
     : 'Preparing the preview; the background safety check will follow.'];
@@ -551,7 +568,7 @@ function formatContentRisk(review?: ContentRiskReview | null, deploymentStatus?:
     : 'Checking publish content before this version goes live.'];
   if (review.status === 'RETRYING') return [live
     ? 'Preview is live. The background safety check is retrying automatically.'
-    : 'The safety check is retrying automatically. Your upload is saved.'];
+    : 'The safety check is retrying automatically. No re-upload is needed.'];
   if (!restrictedRecheck && review.decision === 'PASS' && review.riskLevel === 'LOW') return [];
   const reviseInput = review.findings.some((finding) =>
     ['CONTENT_CHECK_LIMIT_EXCEEDED', 'CONTENT_CHECK_ENCODING_UNSUPPORTED'].includes(finding.reasonCode));

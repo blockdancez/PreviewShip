@@ -19,7 +19,7 @@ test('旧审核未决结果给出自动检查整改建议，不要求人工复�
       assert.match(lines.join('\n'), /publish the revised files/);
       assert.doesNotMatch(lines.join('\n'), /human|manual|Contact support|recovery options/);
     }
-    assert.match(formatContentRisk({ status: 'RETRYING', decision: 'UNKNOWN', findings: [] }).join(''), /retrying automatically/);
+    assert.match(formatContentRisk({ status: 'RETRYING', decision: 'UNKNOWN', findings: [] }).join(''), /retrying automatically.*No re-upload/);
     assert.match(formatContentRisk({ status: 'PENDING', decision: 'UNKNOWN', findings: [] }, 'READY').join(''), /Preview is live.*queued/);
     assert.match(formatContentRisk({ status: 'CHECKING', decision: 'UNKNOWN', findings: [] }, 'READY').join(''), /Preview is live.*running/);
     assert.match(formatContentRisk({ status: 'RETRYING', decision: 'UNKNOWN', findings: [] }, 'READY').join(''), /Preview is live.*retrying/);
@@ -57,6 +57,18 @@ test('旧审核未决结果给出自动检查整改建议，不要求人工复�
       findings: [{ reasonCode: 'OPAQUE_CONTENT_UNINSPECTED' }] }, 'BLOCKED', 'CONTENT_RISK_VERSION_REVOKED').join(' ');
     assert.match(revokedOpaque, /historical version has been withdrawn/);
     assert.doesNotMatch(revokedOpaque, /could not be fully inspected/);
+    const opaque = { status: 'COMPLETED', decision: 'UNKNOWN', findings: [
+      { reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', file: 'assets/app.js', line: 12 },
+    ] };
+    const failedOpaque = formatContentRisk(opaque, 'FAILED', 'CONTENT_CHECK_UNAVAILABLE').join(' ');
+    assert.match(failedOpaque, /assets\/app\.js:12/);
+    assert.match(failedOpaque, /has not gone live.*provide readable code.*publish again/);
+    assert.doesNotMatch(failedOpaque, /Access remains restricted|retry later/);
+    const blockedOpaque = formatContentRisk(opaque, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' ');
+    assert.match(blockedOpaque, /Access remains restricted.*publish a correction in the same project/);
+    const retryingOpaque = formatContentRisk({ ...opaque, status: 'RETRYING' }, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' ');
+    assert.match(retryingOpaque, /automatic safety recheck runs.*No re-upload/);
+    assert.doesNotMatch(retryingOpaque, /publish a correction/);
     const checkingPass = formatContentRisk({ ...pendingRisk, decision: 'PASS', verifiedSafeRecheck: true }, 'BLOCKED', 'CONTENT_RISK_RECHECK_PENDING').join(' ');
     assert.match(checkingPass, /automatic safety recheck runs.*No re-upload/);
     assert.doesNotMatch(checkingPass, /recheck passed|being restored/);

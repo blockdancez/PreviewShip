@@ -18,7 +18,7 @@ import { saveConfig, loadConfig, getApiKey, getConfigPath } from './config.js';
 import { ApiError } from './types.js';
 import type { DeploymentListItem, ProjectAccessResponse, ProjectItem, ProjectVersion } from './types.js';
 import { formatApiError, formatErrorJson } from './errors.js';
-import { formatContentRisk } from './content-risk.js';
+import { contentCheckFailureMessage, formatContentRisk } from './content-risk.js';
 
 // 退出码
 const EXIT_SUCCESS = 0;
@@ -227,11 +227,13 @@ async function cmdStatus(args: string[]): Promise<number> {
       if (detail.previewUrl && detail.status === 'READY' && (!detail.urlStatus || detail.urlStatus === 'READY') && detail.contentRisk?.decision !== 'HOLD') {
         console.log(`Preview URL: ${c.cyan(detail.previewUrl)}`);
       }
-      if (detail.errorMessage) {
-        console.log(`Error: ${c.red(detail.errorMessage)}`);
+      const riskLines = formatContentRisk(detail.contentRisk, detail.status, detail.failureCode);
+      const errorMessage = contentCheckFailureMessage(detail) ?? detail.errorMessage;
+      if (errorMessage && !riskLines.includes(errorMessage)) {
+        console.log(`Error: ${c.red(errorMessage)}`);
       }
       if (detail.failureCode) console.log(`Code: ${detail.failureCode}`);
-      for (const line of formatContentRisk(detail.contentRisk, detail.status, detail.failureCode)) console.log(line);
+      for (const line of riskLines) console.log(line);
       console.log(`Created: ${detail.createdAt}`);
     }
     return EXIT_SUCCESS;

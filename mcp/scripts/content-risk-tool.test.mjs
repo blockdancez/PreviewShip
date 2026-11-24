@@ -32,6 +32,11 @@ test('MCP 工具完整返回审核失败码与结构化整改原因', async () =
             failureCode: id === 114 ? 'CONTENT_RISK_HIGH' : 'CONTENT_RISK_RECHECK_PENDING', contentRisk: { ...contentRisk, status: id === 112 || id === 113 ? 'RETRYING' : 'COMPLETED', decision: id === 111 || id === 112 ? 'UNKNOWN' : 'PASS',
             riskLevel: 'MEDIUM', verifiedSafeRecheck: [110, 113, 114].includes(id) ? true : id === 109 ? false : undefined,
             findings: [{ reasonCode: id === 114 ? 'RISK_EVIDENCE_PENDING' : 'SENSITIVE_COLLECTION', file: 'index.html', line: 3, reason: 'Check credential collection', suggestion: 'Revise the sensitive fields' }] }, createdAt: 'fixture' })
+            : id >= 115 && id <= 117 ? ({ deploymentId: id, projectName: 'fixture', status: id === 115 ? 'FAILED' : 'BLOCKED',
+            failureCode: id === 115 ? 'CONTENT_CHECK_UNAVAILABLE' : 'CONTENT_RISK_RECHECK_PENDING',
+            errorMessage: id === 115 ? 'Please upload it again later.' : 'Automatic recheck is running.', createdAt: 'fixture',
+            contentRisk: { ...contentRisk, status: id === 117 ? 'RETRYING' : 'COMPLETED', decision: 'UNKNOWN', riskLevel: 'UNKNOWN',
+              findings: [{ reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', file: 'assets/app.js', line: 12, reason: 'Encoded content', suggestion: 'Publish a correction.' }] } })
             : id === 105 ? ({ deploymentId: 105, projectName: 'fixture', status: 'READY', urlStatus: 'READY', previewUrl: 'https://example.test/preview',
             contentRisk: { ...contentRisk, status: 'PENDING', decision: 'UNKNOWN', riskLevel: 'UNKNOWN', findings: [] }, createdAt: 'fixture' })
             : id === 106 ? ({ deploymentId: 106, projectName: 'fixture', status: 'READY', urlStatus: 'READY', previewUrl: 'https://example.test/preview',
@@ -60,7 +65,7 @@ test('MCP 工具完整返回审核失败码与结构化整改原因', async () =
     assert.deepEqual(checked.structuredContent.contentRisk, review);
     assert.match(checked.content[0].text, /Code: CONTENT_RISK_HIGH/);
     const retrying = await callbacks.get('check_deployment')({ deploymentId: 104 });
-    assert.match(retrying.content[0].text, /retrying automatically/);
+    assert.match(retrying.content[0].text, /retrying automatically.*No re-upload/);
     assert.doesNotMatch(retrying.content[0].text, /Submit again|Remove the misleading brand/);
     const pending = await callbacks.get('check_deployment')({ deploymentId: 105 });
     assert.match(pending.content[0].text, /Preview is live.*queued/);
@@ -94,6 +99,16 @@ test('MCP 工具完整返回审核失败码与结构化整改原因', async () =
     const confirmed = await callbacks.get('check_deployment')({ deploymentId: 114 });
     assert.match(confirmed.content[0].text, /Code: CONTENT_RISK_HIGH/);
     assert.doesNotMatch(confirmed.content[0].text, /recheck passed|being restored|Preview URL:/);
+    const opaqueFailed = (await callbacks.get('check_deployment')({ deploymentId: 115 })).content[0].text;
+    assert.match(opaqueFailed, /assets\/app\.js:12/);
+    assert.match(opaqueFailed, /has not gone live[\s\S]*provide readable code.*publish again/);
+    assert.doesNotMatch(opaqueFailed, /access remains restricted|upload it again later/i);
+    const opaqueBlocked = (await callbacks.get('check_deployment')({ deploymentId: 116 })).content[0].text;
+    assert.match(opaqueBlocked, /Access remains restricted[\s\S]*publish a correction in the same project/);
+    assert.doesNotMatch(opaqueBlocked, /Automatic recheck is running/i);
+    const opaqueRechecking = (await callbacks.get('check_deployment')({ deploymentId: 117 })).content[0].text;
+    assert.match(opaqueRechecking, /automatic safety recheck runs.*No re-upload/);
+    assert.doesNotMatch(opaqueRechecking, /publish a correction/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

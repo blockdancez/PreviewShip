@@ -2,6 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { ApiClient } from './api-client.js';
 import { getApiKey, getServerUrl } from './config.js';
+import { contentCheckFailureMessage } from './content-risk.js';
 import { packDirectory, packHtmlFile, packMarkdownFile, packPdfFile, hasPdfSignature, DEFAULT_EXCLUDE_PATTERNS } from './zipper.js';
 import { ApiError } from './types.js';
 import type {
@@ -145,9 +146,7 @@ export async function deploy(options: DeployOptions = {}): Promise<DeployResult>
     error: {
       code: detail.failureCode || (detail.urlStatus === 'BLOCKED' ? 'CONTENT_RISK_HIGH'
         : detail.status === 'FAILED' ? 'DEPLOYMENT_FAILED' : `DEPLOYMENT_${detail.status}`),
-      message: detail.contentCheckRetryAvailable
-        ? `The safety check did not finish. Retry without uploading again at https://previewship.com/deploy?deploymentId=${detail.deploymentId}`
-        : detail.errorMessage || `Deployment ended with status ${detail.status}.`,
+      message: contentCheckFailureMessage(detail) ?? (detail.errorMessage || `Deployment ended with status ${detail.status}.`),
       details: detail.contentRisk ? { contentRisk: detail.contentRisk } : undefined,
     },
   };

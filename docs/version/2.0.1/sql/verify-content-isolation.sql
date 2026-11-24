@@ -31,4 +31,26 @@ WHERE p.content_quarantined_at IS NOT NULL
 ORDER BY p.content_quarantined_at, p.id
 LIMIT 100;
 
+-- 最近一小时新建部署的当前状态快照。同一项目多次提交或撤销只计一次。
+-- 发布前分母是提交项目，发布后分母是曾到达 READY 的项目。已恢复或删除的历史撤销不计入此刻影响。
+WITH project_impact AS (
+    SELECT count(DISTINCT d.project_id) AS submitted_projects,
+           count(DISTINCT d.project_id) FILTER (WHERE d.ready_at IS NOT NULL) AS published_projects,
+           count(DISTINCT d.project_id) FILTER (WHERE d.ready_at IS NULL AND d.status = 'FAILED'
+               AND d.failure_code = 'CONTENT_CHECK_UNAVAILABLE') AS pre_publish_failed_projects,
+           count(DISTINCT d.project_id) FILTER (WHERE d.ready_at IS NOT NULL AND d.status = 'BLOCKED'
+               AND r.status = 'COMPLETED' AND r.completed_at IS NOT NULL
+               AND d.failure_code IN ('CONTENT_RISK_RECHECK_PENDING', 'CONTENT_RISK_VERSION_REVOKED', 'CONTENT_RISK_HIGH'))
+               AS post_publish_revoked_projects
+    FROM deployments d
+    LEFT JOIN content_risk_revocations r ON r.deployment_id = d.id
+    WHERE d.created_at >= (now() AT TIME ZONE 'UTC') - INTERVAL '1 hour'
+      AND d.created_at < (now() AT TIME ZONE 'UTC')
+)
+SELECT submitted_projects AS "提交项目数", pre_publish_failed_projects AS "上线前审核未完成失败项目数",
+       round(100.0 * pre_publish_failed_projects / nullif(submitted_projects, 0), 2) AS "上线前审核失败项目百分比",
+       published_projects AS "曾上线项目数", post_publish_revoked_projects AS "上线后已撤销且仍受限项目数",
+       round(100.0 * post_publish_revoked_projects / nullif(published_projects, 0), 2) AS "上线后撤销项目百分比"
+FROM project_impact;
+
 COMMIT;

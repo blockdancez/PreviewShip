@@ -54,6 +54,28 @@ test('扩展区分发布前拦截与已上线后限制访问', async () => {
     assert.match(opaque.message, /encoded active content could not be fully inspected/);
     assert.match(opaque.detail, /Remove obfuscation/);
     assert.doesNotMatch(opaque.message + opaque.detail, /access is being restored|No re-upload is needed/);
+    const failedOpaque = deploymentFailure({ ...base, failureCode: 'CONTENT_CHECK_UNAVAILABLE', status: 'FAILED',
+      contentCheckRetryAvailable: true, contentRisk: { decision: 'UNKNOWN', status: 'COMPLETED', findings: [
+        { reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', file: 'assets/app.js', line: 12, reason: 'Opaque content' },
+      ] } });
+    assert.match(failedOpaque.message, /Publish paused.*encoded active content/);
+    assert.match(failedOpaque.detail, /assets\/app\.js:12/);
+    assert.match(failedOpaque.detail, /provide readable code.*publish again.*has not gone live/);
+    assert.doesNotMatch(failedOpaque.detail, /Retry|uploading again|access remains restricted/i);
+    const retryingOpaque = deploymentFailure({ ...base, failureCode: 'CONTENT_RISK_RECHECK_PENDING', status: 'BLOCKED',
+      contentRisk: { decision: 'UNKNOWN', status: 'RETRYING', findings: [
+        { reasonCode: 'OPAQUE_CONTENT_UNINSPECTED', reason: 'Old finding', suggestion: 'Publish a correction' },
+      ] } });
+    assert.match(retryingOpaque.detail, /No re-upload is needed/);
+    assert.doesNotMatch(retryingOpaque.detail, /Publish a correction/i);
+    const technicalFailure = { ...base, failureCode: 'CONTENT_CHECK_UNAVAILABLE', status: 'FAILED', contentCheckRetryAvailable: true,
+      contentRisk: { decision: 'UNKNOWN', status: 'COMPLETED', findings: [] } };
+    assert.match(deploymentFailure(technicalFailure).detail, /retry the safety check without uploading again/);
+    const riskFailure = { ...technicalFailure, contentRisk: { ...technicalFailure.contentRisk, findings: [
+      { reasonCode: 'RISK_EVIDENCE_PENDING', reason: 'Safety recheck unresolved' },
+    ] } };
+    assert.match(deploymentFailure(riskFailure).detail, /Revise the files.*publish again/);
+    assert.doesNotMatch(deploymentFailure(riskFailure).detail, /retry the safety check without uploading again/);
     for (const failureCode of ['CONTENT_RISK_HIGH', 'CONTENT_RISK_VERSION_REVOKED']) {
       const withdrawn = deploymentFailure({ ...base, failureCode, status: 'BLOCKED',
         contentRisk: { decision: 'PASS', status: 'COMPLETED', verifiedSafeRecheck: true, findings: [] } });

@@ -21,7 +21,7 @@
 | [verify-admin-abuse-notifications.sql](verify-admin-abuse-notifications.sql) | V44 后；管理员通知状态/错误、到期积压、受理时间完整性 | 可重复；只读事务、UTC、5 秒预算，无邮箱/理由/正文 |
 | [verify-content-abuse-history.sql](verify-content-abuse-history.sql) | V42 后；审计分布、删除后存续和暂隔离状态 | 可重复；只读事务，不输出源码或用户邮箱 |
 | [verify-background-review.sql](verify-background-review.sql) | V40/V41 后核对后台任务、到期租约、终态错误 | 可重复；REPEATABLE READ READ ONLY，UTC，5 秒预算 |
-| [verify-content-isolation.sql](verify-content-isolation.sql) | V40/V41 后核对隔离与撤销积压 | 可重复；同上 |
+| [verify-content-isolation.sql](verify-content-isolation.sql) | V40/V41 后核对隔离与撤销积压，按项目去重统计近一小时新建部署的上线前审核失败与上线后撤销仍受限占比 | 可重复，同上 |
 | [test-local-legacy-seed.sql](test-local-legacy-seed.sql) | 仅本机新建临时库 V39 后的合成历史数据 | 每临时库一次；禁止共享环境使用 |
 | [test-local-migrations.sql](test-local-migrations.sql) | 仅本机临时库 V44 后校验约束、唯一性、删除后任务存续及旧审核字段兼容 | 事务回滚，可重复本机执行；禁止共享环境使用 |
 
