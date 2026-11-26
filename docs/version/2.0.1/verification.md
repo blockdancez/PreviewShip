@@ -1,5 +1,15 @@
 # 2.0.1 实现与验证记录
 
+## 2026-11-26 备用模型与审核输入
+
+Backend 基线 `c2588c7`。旧版客户端在生产同类参数契约下复现 `AI_HTTP_ERROR`。真实网关的合成请求确认，仅替换输出字段时，故障通道仍会以 HTTP 400 拒绝零温度。新版按本次实际模型分别构造主请求和纠正请求。离线契约覆盖原模型自纠、主备互换、自定义旧模型、严格结构化响应及输出额度。
+
+以只读方式取回 11 份事故留存制品，逐份核对完整 SHA-256 后使用新旧扫描器离线回放。旧版为 48,816–48,988 字符、零个可提交批次；新版为 47,445–47,617 字符，每份一个完整批次。展开后与原输入逐项一致，覆盖 242 项候选、2,914 条引用、132 个本地目标及全部摘录。制品没有外发或触发生产补审。额外回归覆盖预算恰好等于上限和超出一个字符，以及独立页面必须分别评分的边界。
+
+使用本地新版 Java 客户端和真实网关执行 `OpenRouterContentRiskLiveTest` 中的 `primaryAndFallbackSupportTheStructuredContractOnSyntheticAccounts` 和 `compactAndRegularCandidatesReachTheSameGroundedDecision`。主模型、备用模型对正常合成样本均返回 PASS，对高风险样本均返回 HOLD；网关日志确认备用模型的高风险请求在原故障通道 3 返回 HTTP 200。对相同样本逐一切换常规与紧凑编码后，最终判定一致，高风险结果的证据均可追溯到本次送审片段。真实请求只含合成数据，未创建发布。
+
+后端通过 `mvn -o '-Dtest=Test*,*Test,*Tests,*TestCase,!OpenRouterContentRiskLiveTest' package`。常规套件 1,092 项，其中首轮通过 1,084 项（含 4 项 512 MiB 堆压力测试）；其余 8 项通过 `-Dtest=*PostgresIntegrationTest` 在已迁移的本机独立 PostgreSQL 17 测试库验证。打包后比对了 4 个变更类和应用配置，均与本次编译产物一致。真实网关验收单独执行，线上应用尚未发布本次构建。
+
 ## 2026-11-24 审核未决处理（本地）
 
 基线为根仓库 `a85db94`、Backend `e2298f7`、Console `1ace938`。使用 Java 21、本地测试库、合成制品和替代模型响应验证。
